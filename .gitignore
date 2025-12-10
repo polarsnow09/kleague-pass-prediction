@@ -1,0 +1,21 @@
+# 데이터 파일
+data/raw/*
+data/processed/*
+*.csv
+*.xlsx
+
+# 모델 파일
+models/*.pkl
+models/*.h5
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# 환경 설정
+.env
+config/secrets.yaml
+
+# 기타
+.DS_Store
