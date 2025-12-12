@@ -7,40 +7,30 @@ import numpy as np
 import pandas as pd
 from typing import Tuple
 
-# 경기장 표준 좌표
-# (0, 0): 왼쪽 아래 코너
-# (105, 68): 오른쪽 위 코너
-# (52.5, 34): 센터 서클
-PENALTY_BOX_LEFT = 16.5
-PENALTY_BOX_RIGHT = 105 - 16.5
-CENTER_LINE = 52.5
-
 # 경기장 상수
 FIELD_LENGTH = 105.0
 FIELD_WIDTH = 68.0
 PENALTY_BOX_LENGTH = 16.5
 CENTER_X = FIELD_LENGTH / 2
 
-def add_distance_to_goal(df: pd.DataFrame, is_home: bool = True) -> pd.DataFrame:
+
+def add_distance_to_goal(df: pd.DataFrame) -> pd.DataFrame:
     """
-    골대까지의 거리 계산
+    골대까지의 거리 계산 (is_home에 따라 자동 처리)
     
     Args:
-        df: 데이터프레임
-        is_home: 홈팀 여부 (공격 방향 결정)
+        df: 데이터프레임 (is_home 컬럼 필요)
     
     Returns:
         dist_to_target_goal 컬럼이 추가된 데이터프레임
     """
     df = df.copy()
     
-    # 공격 방향에 따라 타겟 골대 위치 결정
-    if is_home:
-        target_goal_x = FIELD_LENGTH  # 오른쪽 골대
-    else:
-        target_goal_x = 0  # 왼쪽 골대
-    
-    target_goal_y = FIELD_WIDTH / 2  # 골대 중앙
+    # 홈팀/원정팀별 타겟 골대 위치
+    # 홈팀: 오른쪽 골대 (105, 34)
+    # 원정팀: 왼쪽 골대 (0, 34)
+    target_goal_x = np.where(df['is_home'] == 1, FIELD_LENGTH, 0)
+    target_goal_y = FIELD_WIDTH / 2
     
     # 유클리드 거리
     df['dist_to_target_goal'] = np.sqrt(
@@ -137,18 +127,13 @@ def build_baseline_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
     
-    # is_home별로 분리 처리
-    if 'is_home' in df.columns:
-        # 홈/원정 따로 처리
-        home_mask = df['is_home'] == 1
-        
-        df.loc[home_mask] = add_distance_to_goal(df[home_mask], is_home=True)
-        df.loc[~home_mask] = add_distance_to_goal(df[~home_mask], is_home=False)
-    else:
-        # is_home 없으면 홈팀으로 가정
-        df = add_distance_to_goal(df, is_home=True)
+    # is_home 체크
+    if 'is_home' not in df.columns:
+        print("⚠️  Warning: 'is_home' 컬럼이 없습니다. 홈팀으로 가정합니다.")
+        df['is_home'] = 1
     
-    # 나머지 피처
+    # 모든 피처 생성
+    df = add_distance_to_goal(df) 
     df = add_field_zones(df)
     df = add_penalty_box_feature(df)
     df = add_episode_progress(df)
@@ -172,4 +157,5 @@ if __name__ == '__main__':
     print("\n생성된 피처:")
     print(result.columns.tolist())
     print("\n샘플 결과:")
-    print(result)
+    print(result[['start_x', 'start_y', 'is_home', 'dist_to_target_goal', 
+                  'zone_combined', 'in_final_third', 'episode_progress']])
