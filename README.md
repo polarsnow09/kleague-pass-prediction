@@ -30,11 +30,12 @@ kleague-pass-prediction/
 ### 모델 학습
 ```bash
 python src/models/train_model.py
+python src/models/train_model_lgb.py
 ```
 
 ### Test 예측
 ```bash
-python src/models/predict_model.py
+python src/models/predict_ensemble.py
 ```
 
 ## 📊 주요 결과
@@ -42,11 +43,12 @@ python src/models/predict_model.py
 ### 모델 성능
 - **v1 (Baseline)**: CV RMSE 20.36m
 - **v2 (Temporal)**: CV RMSE 18.88m (↓7.3%)
+- **ensemble(XGB+LGB)** : 17.13392  
 
 ### 공모전 제출
-- **Public LB**: 17.23 RMSE
-- **순위**: 282/485 (상위 58%)
-- **일반화 성능**: CV 대비 1.65m 개선
+- **Public LB**: 17.13392 RMSE
+- **순위**: 278/487 (상위 58%)
+- **일반화 성능**: v2 대비 ↓ 0.10 (0.6% 개선)
 
 ### 피처 개발
 - **Phase 1** (8개): 위치 기반 피처
@@ -72,7 +74,7 @@ python src/models/predict_model.py
 
 ## 📝 회고
 
-### Day 1-3 (2024-12-10 ~ 12-12)
+### Day 1-3 (2025-12-10 ~ 12-12)
 - ✅ 프로젝트 구조 설계 및 Git 설정
 - ✅ 탐색적 데이터 분석 (EDA)
 - ✅ Episode 구조 완전 파악
@@ -81,13 +83,34 @@ python src/models/predict_model.py
 - ✅ End-to-end ML 파이프라인 구축
 - ✅ 첫 제출 성공 (LB 17.23)
 
-### 핵심 학습
+#### 핵심 학습
 1. **시계열 피처의 중요성**: 7개 피처로 15.6% 성능 개선
 2. **과적합 방지**: CV 18.88 vs LB 17.23 (일반화 우수)
 3. **파이프라인 구축**: 재현 가능한 ML 워크플로우
 4. **AI 활용 전략**: 체계적 프롬프트 엔지니어링
 
+### Day 4 (2025-12-13)
+- ✅ LightGBM 모델 개발 (CV RMSE 18.81m)
+- ✅ 앙상블 파이프라인 구축
+- ✅ LB 점수 개선 (17.23 → 17.13)
+- ✅ 순위 상승 (282 → 278)
+
+#### 주요 학습
+1. **모델 다양성의 중요성**
+   - XGBoost: zone 중심
+   - LightGBM: 시계열 피처 활용
+   - 앙상블로 각 모델 장점 결합
+
+2. **작은 개선의 누적**
+   - 0.1m 개선도 의미 있음
+   - 여러 기법 조합으로 큰 효과
+
+### 다음 단계
+- [ ] CatBoost 추가
+- [ ] 고급 시계열 피처
+- [ ] 하이퍼파라미터 튜닝
+
 상세 내용: [reports/prompts/README.md](reports/prompts/README.md)
 
-## 📝 회고
+## 📝 종료 후 회고
 (프로젝트 종료 후 작성)
