@@ -139,7 +139,83 @@ def build_baseline_features(df: pd.DataFrame) -> pd.DataFrame:
     df = add_episode_progress(df)
     
     return df
+    
+def add_previous_action_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    이전 액션의 정보 추가 (시계열 피처)
+    
+    Args:
+        df: 데이터프레임 (time_seconds, game_episode 필요)
+    
+    Returns:
+        이전 액션 피처가 추가된 데이터프레임
+    """
+    df = df.copy()
+    
+    # episode별 시간순 정렬
+    df = df.sort_values(['game_episode', 'time_seconds']).reset_index(drop=True)
+    
+    # 이전 액션의 종료 좌표
+    df['prev_end_x'] = df.groupby('game_episode')['end_x'].shift(1)
+    df['prev_end_y'] = df.groupby('game_episode')['end_y'].shift(1)
+    
+    # 이전 액션의 시작 좌표 (방향 계산용)
+    df['prev_start_x'] = df.groupby('game_episode')['start_x'].shift(1)
+    df['prev_start_y'] = df.groupby('game_episode')['start_y'].shift(1)
+    
+    # 이전 액션으로부터의 이동 거리
+    df['prev_action_distance'] = np.sqrt(
+        (df['start_x'] - df['prev_end_x'])**2 + 
+        (df['start_y'] - df['prev_end_y'])**2
+    )
+    
+    # 이전 액션의 시간 간격
+    df['time_since_prev'] = df.groupby('game_episode')['time_seconds'].diff()
+    
+    # 이전 액션의 X 방향 (전진/후진)
+    df['prev_direction_x'] = df['prev_end_x'] - df['prev_start_x']
+    
+    # 이전 액션의 Y 방향 (좌/우)
+    df['prev_direction_y'] = df['prev_end_y'] - df['prev_start_y']
+    
+    # 누적 패스 수 (episode 내)
+    df['pass_count_in_episode'] = df.groupby('game_episode').cumcount() + 1
+    
+    # 첫 액션의 NaN 처리
+    first_action_mask = df['prev_end_x'].isna()
+    
+    df.loc[first_action_mask, 'prev_end_x'] = df.loc[first_action_mask, 'start_x']
+    df.loc[first_action_mask, 'prev_end_y'] = df.loc[first_action_mask, 'start_y']
+    df.loc[first_action_mask, 'prev_start_x'] = df.loc[first_action_mask, 'start_x']
+    df.loc[first_action_mask, 'prev_start_y'] = df.loc[first_action_mask, 'start_y']
+    df.loc[first_action_mask, 'prev_action_distance'] = 0
+    df.loc[first_action_mask, 'time_since_prev'] = 0
+    df.loc[first_action_mask, 'prev_direction_x'] = 0
+    df.loc[first_action_mask, 'prev_direction_y'] = 0
+    
+    return df
 
+
+def build_enhanced_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Phase 2: 시계열 피처 포함 전체 피처 생성
+    
+    Args:
+        df: 원본 데이터프레임
+    
+    Returns:
+        모든 피처가 추가된 데이터프레임
+    """
+    df = df.copy()
+    
+    # Phase 1 피처
+    df = build_baseline_features(df)
+    
+    # Phase 2 피처 (시계열)
+    if 'time_seconds' in df.columns and 'end_x' in df.columns:
+        df = add_previous_action_features(df)
+    
+    return df
 
 if __name__ == '__main__':
     # 테스트 코드
