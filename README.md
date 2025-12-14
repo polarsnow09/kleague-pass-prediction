@@ -113,6 +113,10 @@ python src/models/predict_ensemble.py
 - ✅ CatBoost 모델 개발 (CV RMSE 18.97m)
 - ✅ 앙상블 파이프라인 추가
 - ✅ LB 점수 개선 (17.13 → 17.03)
+- ✅ 가중치 실험 2: XGBoost 감소 [0.2, 0.4, 0.4]
+   - 실험 1: [0.25, 0.5, 0.25]
+   - 실험 2: [0.2, 0.4, 0.4] => LB: 17.0111116245로 성능 개선 
+   - 실험 3: [0.2, 0.6, 0.2]
 
 #### 주요 학습
 1. **3개 모델 다양성 효과 검증**
@@ -121,6 +125,7 @@ python src/models/predict_ensemble.py
       - CatBoost: start_x 압도적 (37.4)
       - LightGBM: start_x, 시계열 균형
       - XGBoost: zone 중심
+   - 가중치 실험 : XGBoost 감소 [0.2, 0.4, 0.4] => 기존 균등 가중치보다 성능 개선 보임
 
 2. **작은 개선의 누적**
    - 예상 범위 내 개선 : 0.1m 개선
