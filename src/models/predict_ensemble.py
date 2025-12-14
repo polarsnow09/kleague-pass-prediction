@@ -274,10 +274,12 @@ if __name__ == '__main__':
         exit(1)
     
     # 앙상블 제출 파일 생성
-    # 균등 가중치 (33.3% 씩)
+    # 가중치 실험 2: XGBoost 감소
+    weights =  [0.2, 0.4, 0.4]
+    output_name = 'submission_ensemble(3model)_balanced.csv'
     create_ensemble_submission(
         test_csv=TEST_CSV,
         model_paths=MODEL_PATHS,
-        weights=None,  # 또는 [0.33, 0.33, 0.34]
-        output_filename='submission_ensemble_3models.csv'
+        weights=weights, 
+        output_filename=output_name
     )
