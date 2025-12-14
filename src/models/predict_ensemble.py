@@ -257,6 +257,7 @@ if __name__ == '__main__':
     MODEL_PATHS = [
         MODEL_DIR / 'baseline_model_v2_temporal.pkl',  # XGBoost
         MODEL_DIR / 'lgb_model_v1.pkl',                # LightGBM
+        MODEL_DIR / 'catboost_model_v1.pkl',            # CatBoost
     ]
     
     # 모델 존재 확인
@@ -273,10 +274,10 @@ if __name__ == '__main__':
         exit(1)
     
     # 앙상블 제출 파일 생성
-    # weights=None: 균등 평균 (50% XGBoost + 50% LightGBM)
+    # 균등 가중치 (33.3% 씩)
     create_ensemble_submission(
         test_csv=TEST_CSV,
         model_paths=MODEL_PATHS,
-        weights=None,  # [0.5, 0.5]와 동일
-        output_filename='submission_ensemble_xgb_lgb.csv'
+        weights=None,  # 또는 [0.33, 0.33, 0.34]
+        output_filename='submission_ensemble_3models.csv'
     )
