@@ -41,14 +41,18 @@ python src/models/predict_ensemble.py
 ## 📊 주요 결과
 
 ### 모델 성능
-- **v1 (Baseline)**: CV RMSE 20.36m
-- **v2 (Temporal)**: CV RMSE 18.88m (↓7.3%)
-- **ensemble(XGB+LGB)** : 17.13392  
+- **XGBoost**:
+  - **v1 (Baseline)**: CV RMSE 20.36m
+  - **v2 (Temporal)**: CV RMSE 18.88m (↓7.3%)
+- **LightGBM**:  CV 18.81m 
+- **CatBoost**:  CV 18.97m 
+- **ensemble(XGB+LGB)** : 17.13392 
+- **ensemble(XGB+LGB+CatBoost)** : 17.0292987272
 
 ### 공모전 제출
-- **Public LB**: 17.13392 RMSE
-- **순위**: 278/487 (상위 58%)
-- **일반화 성능**: v2 대비 ↓ 0.10 (0.6% 개선)
+- **Public LB**: 17.0292987272 RMSE
+- **순위**: 285/500 (상위 57%)
+- **일반화 성능**: ensemble(XGB+LGB) 대비 ↓ 0.20 (1.2%)
 
 ### 피처 개발
 - **Phase 1** (8개): 위치 기반 피처
@@ -74,7 +78,7 @@ python src/models/predict_ensemble.py
 
 ## 📝 회고
 
-### Day 1-3 (2025-12-10 ~ 12-12)
+### Day 1-3 (2025-12-11 ~ 12-13)
 - ✅ 프로젝트 구조 설계 및 Git 설정
 - ✅ 탐색적 데이터 분석 (EDA)
 - ✅ Episode 구조 완전 파악
@@ -89,7 +93,7 @@ python src/models/predict_ensemble.py
 3. **파이프라인 구축**: 재현 가능한 ML 워크플로우
 4. **AI 활용 전략**: 체계적 프롬프트 엔지니어링
 
-### Day 4 (2025-12-13)
+### Day 3 (2025-12-13)
 - ✅ LightGBM 모델 개발 (CV RMSE 18.81m)
 - ✅ 앙상블 파이프라인 구축
 - ✅ LB 점수 개선 (17.23 → 17.13)
@@ -105,8 +109,24 @@ python src/models/predict_ensemble.py
    - 0.1m 개선도 의미 있음
    - 여러 기법 조합으로 큰 효과
 
+### Day 4 (2025-12-14)
+- ✅ CatBoost 모델 개발 (CV RMSE 18.97m)
+- ✅ 앙상블 파이프라인 추가
+- ✅ LB 점수 개선 (17.13 → 17.03)
+
+#### 주요 학습
+1. **3개 모델 다양성 효과 검증**
+   - 앙상블로 각 모델 장점 결합
+   - 피처 중요도 차이 (3개 모델이 완전히 다른 패턴 학습!✨)
+      - CatBoost: start_x 압도적 (37.4)
+      - LightGBM: start_x, 시계열 균형
+      - XGBoost: zone 중심
+
+2. **작은 개선의 누적**
+   - 예상 범위 내 개선 : 0.1m 개선
+   - 여러 기법 조합으로 큰 효과
+
 ### 다음 단계
-- [ ] CatBoost 추가
 - [ ] 고급 시계열 피처
 - [ ] 하이퍼파라미터 튜닝
 
