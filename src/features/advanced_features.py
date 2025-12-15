@@ -1,5 +1,5 @@
 """
-Phase 3: 고급 시계열 피처
+Phase 3: 고급 시계열 피처 (수정본)
 """
 
 import numpy as np
@@ -41,7 +41,7 @@ def add_rolling_features(df: pd.DataFrame, windows: list = [3, 5]) -> pd.DataFra
 
 
 def add_cumulative_features(df: pd.DataFrame) -> pd.DataFrame:
-    """누적 통계 피처 (수정됨)"""
+    """누적 통계 피처 (수정: 극단값 처리)"""
     df = df.copy()
     
     # 누적 거리
@@ -50,23 +50,37 @@ def add_cumulative_features(df: pd.DataFrame) -> pd.DataFrame:
     # 누적 전진 (X)
     df['cumulative_forward'] = df.groupby('game_episode')['prev_direction_x'].cumsum()
     
-    # 누적 측면 (Y) - transform 사용
+    # 누적 측면 (Y) - 절대값 합
     df['cumulative_lateral'] = df.groupby('game_episode')['prev_direction_y'].transform(
         lambda x: x.abs().cumsum()
     )
     
-    # 비율 (0으로 나누기 방지)
-    df['forward_lateral_ratio'] = df['cumulative_forward'] / (df['cumulative_lateral'] + 1e-6)
+    # 비율 (수정: 최소 5m 보장 + 극단값 제한)
+    df['forward_lateral_ratio'] = np.where(
+        df['cumulative_lateral'] > 5.0,  # 최소 5m 측면 이동
+        df['cumulative_forward'] / df['cumulative_lateral'],
+        np.sign(df['cumulative_forward']) * 5.0  # 대체값: ±5
+    )
+    
+    # 극단값 클리핑 (-20 ~ +20)
+    df['forward_lateral_ratio'] = np.clip(df['forward_lateral_ratio'], -20, 20)
     
     return df
 
 
 def add_velocity_features(df: pd.DataFrame) -> pd.DataFrame:
-    """속도 관련 피처"""
+    """속도 관련 피처 (수정: 최소 시간 0.5초)"""
     df = df.copy()
     
-    # 속도 (m/s) - 0으로 나누기 방지
-    df['pass_velocity'] = df['prev_action_distance'] / (df['time_since_prev'] + 0.1)
+    # 속도 (m/s) - 최소 0.5초 보장
+    df['pass_velocity'] = np.where(
+        df['time_since_prev'] >= 0.5,
+        df['prev_action_distance'] / df['time_since_prev'],
+        df['prev_action_distance'] / 0.5  # 0.5초 미만은 0.5초로 간주
+    )
+    
+    # 극단값 클리핑 (0 ~ 40 m/s = 144 km/h)
+    df['pass_velocity'] = np.clip(df['pass_velocity'], 0, 40)
     
     # Episode 평균 속도
     df['avg_episode_velocity'] = df.groupby('game_episode')['pass_velocity'].transform('mean')
@@ -151,27 +165,22 @@ def build_phase3_features(df: pd.DataFrame) -> pd.DataFrame:
     # 1. 롤링 피처
     print("  - 롤링 통계...")
     df = add_rolling_features(df, windows=[3, 5])
-    print("     롤링 통계 end")
     
     # 2. 누적 피처
     print("  - 누적 통계...")
     df = add_cumulative_features(df)
-    print("     누적 통계 end")
     
     # 3. 속도 피처
     print("  - 속도 분석...")
     df = add_velocity_features(df)
-    print("     속도 분석 end")
     
     # 4. 공간 피처
     print("  - 공간 활용...")
     df = add_spatial_features(df)
-    print("     공간 활용 end")
     
     # 5. 패턴 피처
     print("  - 패턴 인식...")
     df = add_pattern_features(df)
-    print("     패턴 인식 end")
     
     print("✅ Phase 3 완료!")
     
