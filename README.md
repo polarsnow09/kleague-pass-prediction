@@ -9,72 +9,167 @@
 - **성과**: (추후 작성)
 
 ## 🛠️ 기술 스택
-- Python 3.10
-- pandas, numpy, scikit-learn
-- (추가 예정)
+- **언어**: Python 3.10
+- **라이브러리**: pandas, numpy, scikit-learn
+- **모델**: XGBoost, LightGBM, CatBoost
+- **기법**: 시계열 피처 엔지니어링, 앙상블 모델링, K-Fold CV
 
 ## 📂 프로젝트 구조
 ```
 kleague-pass-prediction/
-├── data/                   # 데이터 폴더
-├── notebooks/              # 분석 노트북
-├── src/                    # 소스 코드
-├── models/                 # 학습된 모델
-├── reports/                # 분석 보고서
-├── README.md
-└── requirements.txt
+├── data/
+│   ├── raw/                    # 원본 데이터
+│   └── processed/              # 전처리 데이터
+│       ├── train_final_passes_v2.csv  # Phase 2
+│       └── train_final_passes_v3.csv  # Phase 3
+├── models/                     # 학습된 모델 (.pkl)
+│   ├── baseline_model_v3.pkl
+│   ├── lgb_model_v3.pkl
+│   └── catboost_model_v3.pkl
+├── src/
+│   ├── features/               # 피처 생성 모듈
+│   │   ├── build_feature.py    # Phase 1, 2
+│   │   └── advanced_features.py # Phase 3
+│   └── models/                 # 모델 학습/예측
+│       ├── train_model.py
+│       └── predict_ensemble.py
+├── reports/
+│   ├── figures/                # 시각화
+│   └── prompts/                # AI 협업 로그
+├── submissions/                # 제출 파일
+└── README.md
 ```
 
 ## 🚀 실행 방법
 
-### 모델 학습
+### 환경 설정
 ```bash
-python src/models/train_model.py
-python src/models/train_model_lgb.py
+pip install -r requirements.txt
 ```
 
-### Test 예측
+### 모델 학습
+```bash
+# 개별 모델 학습 (Phase 3)
+python src/models/train_model.py          # XGBoost
+python src/models/train_model_lgb.py      # LightGBM
+python src/models/train_model_catboost.py # CatBoost
+```
+
+### 앙상블 예측
 ```bash
 python src/models/predict_ensemble.py
+# 출력: submissions/submission_ensemble_v3.csv
 ```
 
 ## 📊 주요 결과
 
-### 모델 성능
-- **XGBoost**:
-  - **v1 (Baseline)**: CV RMSE 20.36m
-  - **v2 (Temporal)**: CV RMSE 18.88m (↓7.3%)
-- **LightGBM**:  CV 18.81m 
-- **CatBoost**:  CV 18.97m 
-- **ensemble(XGB+LGB)** : 17.13392 
-- **ensemble(XGB+LGB+CatBoost)** : 17.0292987272
+### 성능 개선 과정
+| 단계 | CV RMSE | LB Score | 개선 |
+|------|---------|----------|------|
+| Phase 1 (Baseline) | 20.36m | - | - |
+| Phase 2 (Temporal) | 18.88m | 17.23m | -7.3% |
+| Phase 2 + 2-model Ensemble | - | 17.13m | -0.6% |
+| Phase 2 + 3-model Ensemble | - | 17.01m | -0.7% |
+| **Phase 3 + 3-model Ensemble** | **18.85m** | **16.98m** | **-0.2%** |
+
+### 개별 모델 성능
+| 모델 | Phase 2 (v2) | Phase 3 (v3) | 변화 |
+|------|--------------|--------------|------|
+| **XGBoost** | 18.88m | 18.91m | +0.03m |
+| **LightGBM** | 18.81m | 18.82m | +0.01m |
+| **CatBoost** | 18.97m | **18.82m** | **-0.15m** ✨ |
+| **평균** | 18.89m | 18.85m | -0.04m |
+**핵심 발견**: CatBoost가 Phase 3 피처를 가장 잘 활용!
 
 ### 공모전 제출
-- **Public LB**: 17.0292987272 RMSE
-- **순위**: 285/500 (상위 57%)
-- **일반화 성능**: ensemble(XGB+LGB) 대비 ↓ 0.20 (1.2%)
+- **Public LB**: 16.981553967 RMSE
+- **순위**: 300/540 (상위 약 56%)
+- **일반화 성능**: 베이스라인 대비 약 -16.6% 개선 
 
 ### 피처 개발
-- **Phase 1** (8개): 위치 기반 피처
-  - start_x, start_y, dist_to_target_goal
-  - zone encoding (9 zones)
-  - penalty_box, final_third
-  
-- **Phase 2** (7개): 시계열 피처
-  - prev_end_x/y (이전 액션 위치)
-  - prev_action_distance, time_since_prev
-  - prev_direction_x/y (공격 방향)
-  - pass_count_in_episode
+#### Phase 1: 위치 기반 피처 (8개)
+```python
+- start_x, start_y              # 시작 좌표
+- dist_to_target_goal           # 골대까지 거리
+- zone_x, zone_y, zone_combined # 구역 분류 (9 zones)
+- in_penalty_box                # 페널티 박스 여부
+- in_final_third                # 최종 3구역 여부
+```
+**효과**: CV 20.36m (베이스라인)
+
+#### Phase 2: 시계열 피처 (7개)
+```python
+- prev_end_x, prev_end_y        # 이전 액션 종료 위치
+- prev_action_distance          # 이전 액션과의 거리
+- time_since_prev               # 이전 액션과의 시간 간격
+- prev_direction_x, prev_direction_y # 공격 방향
+- pass_count_in_episode         # Episode 내 패스 카운트
+```
+**효과**: CV 18.88m (**-7.3%** 개선)
+**핵심 인사이트**:
+- Episode 맥락이 좌표 예측에 결정적
+- 공격 방향성이 최종 패스 위치 결정
+
+#### Phase 3: 고급 시계열 피처 (선별 6개)
+```python
+# 속도 관련
+- pass_velocity                 # 패스 속도 (m/s)
+- avg_episode_velocity          # Episode 평균 속도
+
+# 공간 활용
+- touchline_proximity           # 터치라인 근접도
+- episode_x_range               # X축 활용 범위
+
+# 패턴 인식
+- is_under_pressure             # 압박 상황 여부
+- rolling_mean_distance_3       # 최근 3개 평균 거리
+```
+**효과**: CV 18.85m (**-0.2%** 추가 개선)
+**개발 과정**:
+1. 23개 고급 피처 생성 → 성능 악화 (18.99m)
+2. 피처 중요도 분석 → 6개 선별
+3. 재학습 → 성능 회복 (18.85m)
+**교훈**: "피처 품질 > 피처 수량"
+
+## 📈 피처 중요도 분석
+### XGBoost (zone 중심)
+```
+1. zone_x_encoded (80%)      ← 압도적!
+2. start_x (10%)
+3. in_penalty_box (1.4%)
+```
+
+### LightGBM (균형잡힌 분포)
+```
+1. start_x (36.5M)
+2. zone_x_encoded (8.1M)
+3. time_since_prev (2.7M)
+4. touchline_proximity (1.7M) ← Phase 3
+```
+
+### CatBoost (공간 피처 활용)
+```
+1. start_x (28.3)
+2. time_since_prev (8.0)
+3. touchline_proximity (6.7)  ← Phase 3 효과!
+```
+**결론**: 각 모델이 다른 패턴 학습 → 앙상블 효과 극대화
 
 ## 🤖 AI 협업 전략
+### Claude 활용 방법
+1. **피처 아이디어 생성**: 30+ 프롬프트
+2. **코드 리뷰 및 디버깅**: 실시간 오류 수정
+3. **전략 수립**: 앙상블 가중치, 피처 선택
+4. **문서화**: 체계적 프롬프트 로그
 
-이 프로젝트는 Claude를 활용하여:
-- 30+ 프롬프트로 피처 아이디어 도출
-- 체계적 프롬프트 로그 작성 (reports/prompts/)
-- 코드 리뷰 및 디버깅
-- 실무 수준의 프로젝트 구조 설계
-
-상세: [AI Collaboration Log](reports/prompts/02_feature_engineering.md)
+### 프롬프트 로그 구조
+```
+reports/prompts/
+├── 01_data_understanding.md    # 데이터 구조 파악
+├── 02_feature_engineering.md   # 피처 설계
+└── 03_model_ensemble.md        # 앙상블 전략
+```
+상세: [AI Collaboration Log](reports/prompts/03_model_ensemble.md)
 
 ## 📝 회고
 
@@ -131,8 +226,40 @@ python src/models/predict_ensemble.py
    - 예상 범위 내 개선 : 0.1m 개선
    - 여러 기법 조합으로 큰 효과
 
+### Day 5 (2024-12-15)
+- ✅ Phase 3 피처 23개 생성
+- ✅ 극단값 문제 발견 및 수정
+- ✅ 피처 선택 (23개 → 6개)
+- ✅ XGBoost v3 학습 (18.91m)
+
+#### 주요 학습
+1. **극단값 처리의 중요성**
+   - pass_velocity: 853 m/s → 40 m/s
+   - 데이터 품질 = 모델 품질
+
+2. **피처 선택의 가치**
+   - 23개 전체: 18.99m (악화)
+   - 6개 선별: 18.91m (회복)
+
+### Day 6 (2024-12-16)
+- ✅ LightGBM v3 학습 (18.82m)
+- ✅ CatBoost v3 학습 (18.82m)
+- ✅ 3개 모델 종합 분석
+- ✅ v3 채택 결정
+- ✅ 앙상블 예측 (16.98m)
+- ✅ 프로젝트 문서화
+
+#### 주요 학습
+1. **CatBoost의 Phase 3 활용**
+   - touchline_proximity 중요도 12.0
+   - 유일하게 개선 (-0.15m)
+
+2. **앙상블 효과 검증**
+   - v2: 17.01m
+   - v3: 16.98m (-0.03m)
+   - 예상 범위 내 달성
+
 ### 다음 단계
-- [ ] 고급 시계열 피처
 - [ ] 하이퍼파라미터 튜닝
 
 상세 내용: [reports/prompts/README.md](reports/prompts/README.md)
