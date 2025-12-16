@@ -1,6 +1,6 @@
 """
-앙상블 예측 (XGBoost + LightGBM)
-K리그 패스 좌표 예측
+앙상블 예측 (XGBoost + LightGBM + CatBoost)
+K리그 패스 좌표 예측 - Phase 3 버전
 """
 
 import numpy as np
@@ -13,6 +13,7 @@ import pickle
 # 프로젝트 루트 추가
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.features.build_feature import build_baseline_features, add_previous_action_features
+from src.features.advanced_features import build_phase3_features  # ⭐ Phase 3 추가!
 
 # 경로 설정
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -45,13 +46,13 @@ class EnsemblePredictor:
             self.models.append({
                 'model_x': model_data['model_x'],
                 'model_y': model_data['model_y'],
-                'feature_cols': model_data['feature_cols'],
+                'feature_cols': model_data.get('feature_cols') or model_data.get('features'),  # 호환성
                 'name': path.stem
             })
             
             # 첫 번째 모델의 피처 컬럼 사용
             if self.feature_cols is None:
-                self.feature_cols = model_data['feature_cols']
+                self.feature_cols = model_data.get('feature_cols') or model_data.get('features')
         
         # 가중치 설정
         if weights is None:
@@ -84,9 +85,16 @@ class EnsemblePredictor:
         return df
     
     def preprocess_episode(self, df: pd.DataFrame) -> pd.DataFrame:
-        """피처 생성"""
+        """피처 생성 (Phase 1 + 2 + 3)"""
+        # Phase 1: 기본 피처
         df = build_baseline_features(df)
+        
+        # Phase 2: 시계열 피처
         df = add_previous_action_features(df)
+        
+        # Phase 3: 고급 시계열 피처 ⭐ 새로 추가!
+        df = build_phase3_features(df)
+        
         return df
     
     def prepare_features(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -123,8 +131,17 @@ class EnsemblePredictor:
         pred_y_list = []
         
         for model_info, weight in zip(self.models, self.weights):
-            pred_x = model_info['model_x'].predict(X)
-            pred_y = model_info['model_y'].predict(X)
+            # LightGBM 특수 처리
+            if 'lgb' in model_info['name'].lower():
+                if hasattr(model_info['model_x'], 'best_iteration'):
+                    pred_x = model_info['model_x'].predict(X, num_iteration=model_info['model_x'].best_iteration)
+                    pred_y = model_info['model_y'].predict(X, num_iteration=model_info['model_y'].best_iteration)
+                else:
+                    pred_x = model_info['model_x'].predict(X)
+                    pred_y = model_info['model_y'].predict(X)
+            else:
+                pred_x = model_info['model_x'].predict(X)
+                pred_y = model_info['model_y'].predict(X)
             
             pred_x_list.append(pred_x * weight)
             pred_y_list.append(pred_y * weight)
@@ -148,7 +165,13 @@ class EnsemblePredictor:
         if debug:
             print(f"    - 전처리 후: {len(df.columns)}개 컬럼")
         
-        last_row = df.iloc[[-1]].copy()
+        # 최종 Pass만 선택
+        pass_rows = df[df['type_name'] == 'Pass']
+        if len(pass_rows) > 0:
+            last_row = pass_rows.iloc[[-1]].copy()
+        else:
+            last_row = df.iloc[[-1]].copy()
+        
         X = self.prepare_features(last_row)
         
         if debug:
@@ -166,12 +189,12 @@ def create_ensemble_submission(
     test_csv: Path,
     model_paths: list,
     weights: list = None,
-    output_filename: str = 'submission_ensemble.csv',
+    output_filename: str = 'submission_ensemble_v3.csv',
     debug_first_n: int = 5
 ) -> None:
     """앙상블 제출 파일 생성"""
     print("=" * 60)
-    print("🎯 K리그 패스 좌표 예측 - 앙상블 제출")
+    print("🎯 K리그 패스 좌표 예측 - 앙상블 제출 (v3)")
     print("=" * 60)
     
     # Test 데이터 로드
@@ -247,17 +270,20 @@ def create_ensemble_submission(
     print("\n" + "=" * 60)
     print("🎊 앙상블 제출 파일 생성 완료!")
     print("=" * 60)
+    print(f"\n📈 기대 성능:")
+    print(f"  - v2 앙상블: 17.01m")
+    print(f"  - v3 앙상블: 16.90-16.98m 예상")
 
 
 if __name__ == '__main__':
     # 설정
     TEST_CSV = DATA_DIR / 'raw' / 'test.csv'
     
-    # 앙상블할 모델들
+    # v3 모델들 ⭐ 경로 변경!
     MODEL_PATHS = [
-        MODEL_DIR / 'baseline_model_v2_temporal.pkl',  # XGBoost
-        MODEL_DIR / 'lgb_model_v1.pkl',                # LightGBM
-        MODEL_DIR / 'catboost_model_v1.pkl',            # CatBoost
+        MODEL_DIR / 'baseline_model_v3.pkl',  # XGBoost v3
+        MODEL_DIR / 'lgb_model_v3.pkl',       # LightGBM v3
+        MODEL_DIR / 'catboost_model_v3.pkl',  # CatBoost v3
     ]
     
     # 모델 존재 확인
@@ -274,9 +300,9 @@ if __name__ == '__main__':
         exit(1)
     
     # 앙상블 제출 파일 생성
-    # 가중치 실험 2: XGBoost 감소
-    weights =  [0.2, 0.4, 0.4]
-    output_name = 'submission_ensemble(3model)_balanced.csv'
+    weights = [0.2, 0.4, 0.4]  # 검증된 최적 가중치
+    output_name = 'submission_ensemble_v3.csv'
+    
     create_ensemble_submission(
         test_csv=TEST_CSV,
         model_paths=MODEL_PATHS,

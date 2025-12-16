@@ -1,5 +1,5 @@
 """
-베이스라인 모델 학습
+베이스라인 모델 학습 - Phase 3 버전
 K리그 패스 좌표 예측 - XGBoost 멀티 타겟 회귀
 """
 
@@ -26,20 +26,24 @@ class PassCoordinateModel:
         self.model_y = None  # end_y 예측 모델
         self.feature_cols = []
         
-    def prepare_features(self, df: pd.DataFrame, use_temporal: bool = True) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+    def prepare_features(self, df: pd.DataFrame, use_temporal: bool = True, 
+                        use_phase3: bool = True) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
         """
         학습용 피처 준비
         
         Args:
             df: 데이터프레임
-            use_temporal: 시계열 피처 사용 여부
+            use_temporal: Phase 2 시계열 피처 사용 여부
+            use_phase3: Phase 3 고급 피처 사용 여부
         
         Returns:
             X, y_x, y_y
         """
         df = df.copy()
         
-        print(f"\n🔧 피처 준비 시작 (시계열: {'ON' if use_temporal else 'OFF'})")
+        print(f"\n🔧 피처 준비 시작")
+        print(f"  - Phase 2: {'ON' if use_temporal else 'OFF'}")
+        print(f"  - Phase 3: {'ON' if use_phase3 else 'OFF'}")
         print(f"  - 원본 컬럼 수: {len(df.columns)}")
         
         # 범주형 피처 인코딩
@@ -84,10 +88,34 @@ class PassCoordinateModel:
                     temporal_added.append(feat)
             
             print(f"  - Phase 2 피처: {len(temporal_added)}개")
-            if temporal_added:
-                print(f"    추가된 피처: {temporal_added}")
-            else:
-                print(f"    ⚠️  시계열 피처를 찾을 수 없습니다!")
+        
+        # Phase 3 피처 (선별 버전) ⭐ 유용한 것만!
+        if use_phase3:
+            phase3_features = [
+                # 속도 (핵심 2개만)
+                'pass_velocity',          # 중요도 0.8%
+                'avg_episode_velocity',   # Episode 평균
+                
+                # 공간 (핵심 2개만)
+                'touchline_proximity',    # 중요도 0.9%, 측면 압박
+                'episode_x_range',        # X축 활용도
+                
+                # 패턴 (핵심 1개만)
+                'is_under_pressure',      # 중요도 0.6%, 압박 상황
+                
+                # 롤링 평균 (대표 1개만)
+                'rolling_mean_distance_3', # 최근 패스 거리 추세
+            ]
+            
+            phase3_added = []
+            for feat in phase3_features:
+                if feat in df.columns:
+                    self.feature_cols.append(feat)
+                    phase3_added.append(feat)
+            
+            print(f"  - Phase 3 피처: {len(phase3_added)}개")
+            if not phase3_added:
+                print(f"    ⚠️  Phase 3 피처를 찾을 수 없습니다!")
         
         print(f"  - 최종 피처 수: {len(self.feature_cols)}개")
         
@@ -117,18 +145,17 @@ class PassCoordinateModel:
             학습 결과 딕셔너리
         """
         print("=" * 60)
-        print("🚀 베이스라인 모델 학습 시작")
+        print("🚀 XGBoost 모델 학습 시작 (Phase 3)")
         print("=" * 60)
         
         # 피처 준비
-        X, y_x, y_y = self.prepare_features(df)
+        X, y_x, y_y = self.prepare_features(df, use_temporal=True, use_phase3=True)
         
         print(f"\n📊 데이터 정보:")
-        print(f"  - 샘플 수: {len(X)}")
+        print(f"  - 샘플 수: {len(X):,}")
         print(f"  - 피처 수: {len(self.feature_cols)}")
-        print(f"  - 피처 목록: {self.feature_cols}")
         
-        # XGBoost 파라미터
+        # XGBoost 파라미터 (v2와 동일)
         params = {
             'objective': 'reg:squarederror',
             'max_depth': 6,
@@ -139,6 +166,10 @@ class PassCoordinateModel:
             'random_state': 42,
             'n_jobs': -1
         }
+        
+        print(f"\n⚙️  하이퍼파라미터:")
+        for key, value in params.items():
+            print(f"  - {key}: {value}")
         
         # Cross-validation
         kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
@@ -207,8 +238,8 @@ class PassCoordinateModel:
             'importance_y': self.model_y.feature_importances_
         }).sort_values('importance_x', ascending=False)
         
-        print(f"\n📊 피처 중요도 (Top 5):")
-        print(feature_importance_x.head())
+        print(f"\n📊 피처 중요도 (Top 10):")
+        print(feature_importance_x.head(10).to_string(index=False))
         
         # 결과 저장
         results = {
@@ -278,39 +309,54 @@ class PassCoordinateModel:
 
 
 if __name__ == '__main__':
-    print("🎯 K리그 패스 좌표 예측 - v2 모델 (시계열 피처)\n")
+    print("🎯 K리그 패스 좌표 예측 - v3 모델 (고급 시계열 피처)\n")
     
-    # 데이터 로드
-    train_path = DATA_DIR / 'train_final_passes_v2.csv'
+    # 데이터 로드 (v3로 변경!)
+    train_path = DATA_DIR / 'train_final_passes_v3.csv'
     
     if not train_path.exists():
-        print(f"❌ v2 데이터 파일이 없습니다: {train_path}")
-        print("v1 파일로 대체합니다.")
-        train_path = DATA_DIR / 'train_final_passes_featured.csv'
+        print(f"❌ v3 데이터 파일이 없습니다: {train_path}")
+        print("먼저 Phase 3 피처를 생성해주세요!")
+        exit(1)
     
     df = pd.read_csv(train_path)
-    print(f"✅ 데이터 로드 완료: {len(df)}개 샘플")
+    print(f"✅ 데이터 로드 완료: {len(df):,}개 샘플")
     print(f"  - 컬럼 수: {len(df.columns)}")
-    print(f"  - 컬럼 목록 (처음 10개): {df.columns.tolist()[:10]}")
     
-    # 시계열 피처 확인
-    temporal_features = ['prev_end_x', 'prev_end_y', 'prev_action_distance',
-                         'time_since_prev', 'prev_direction_x', 'prev_direction_y',
-                         'pass_count_in_episode']
-    has_temporal = any(feat in df.columns for feat in temporal_features)
+    # Phase 3 피처 확인
+    phase3_features = [
+        'rolling_mean_distance_3', 'cumulative_distance', 
+        'pass_velocity', 'episode_x_range', 'is_buildup'
+    ]
+    has_phase3 = any(feat in df.columns for feat in phase3_features)
     
-    print(f"\n시계열 피처 존재: {'✓' if has_temporal else '✗'}")
+    print(f"\nPhase 3 피처 존재: {'✓' if has_phase3 else '✗'}")
+    
+    if not has_phase3:
+        print("⚠️  Phase 3 피처가 없습니다!")
+        print("v2 데이터를 사용 중인 것 같습니다. v3 데이터를 사용해주세요.")
+        exit(1)
     
     # 모델 학습
     model = PassCoordinateModel()
     results = model.train(df, n_folds=5)
     
-    # 모델 저장
-    if has_temporal:
-        model.save('baseline_model_v2_temporal.pkl')
+    # 모델 저장 (v3로 변경!)
+    model.save('baseline_model_v3.pkl')
+    
+    # v2와 비교
+    print("\n" + "="*60)
+    print("📊 성능 비교")
+    print("="*60)
+    print(f"Phase 2 (v2): CV 18.88m (참고값)")
+    print(f"Phase 3 (v3): CV {results['mean_rmse_total']:.2f}m")
+    
+    if results['mean_rmse_total'] < 18.88:
+        improvement = 18.88 - results['mean_rmse_total']
+        print(f"✅ 개선: -{improvement:.2f}m ({improvement/18.88*100:.1f}%)")
     else:
-        model.save('baseline_model_v2_baseline.pkl')
+        print(f"⚠️  악화: +{results['mean_rmse_total'] - 18.88:.2f}m")
     
     print("\n" + "="*60)
-    print("🎊 학습 완료!")
+    print("🎊 XGBoost 학습 완료!")
     print("="*60)
