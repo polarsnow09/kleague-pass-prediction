@@ -107,11 +107,14 @@ def train_lgb_model(df: pd.DataFrame, n_folds: int = 5):
         'objective': 'regression',
         'metric': 'rmse',
         'boosting_type': 'gbdt',
-        'num_leaves': 31,
-        'learning_rate': 0.05,
-        'feature_fraction': 0.8,
-        'bagging_fraction': 0.8,
+        'num_leaves': 63,              # 31 → 63 (복잡도 증가)
+        'learning_rate': 0.03,         # 0.05 → 0.03 (학습률 감소)
+        'feature_fraction': 0.7,       # 0.8 → 0.7 (피처 샘플링 감소)
+        'bagging_fraction': 0.7,       # 0.8 → 0.7 (데이터 샘플링 감소)
         'bagging_freq': 5,
+        'min_child_samples': 20,       # 추가: 과적합 방지
+        'reg_alpha': 0.1,              # 추가: L1 정규화
+        'reg_lambda': 0.1,             # 추가: L2 정규화
         'verbose': -1,
         'random_state': 42,
         'n_jobs': -1
@@ -142,7 +145,7 @@ def train_lgb_model(df: pd.DataFrame, n_folds: int = 5):
         model_x = lgb.train(
             params,
             train_data_x,
-            num_boost_round=500,
+            num_boost_round=800,    # 500 → 800
             valid_sets=[val_data_x],
             callbacks=[lgb.early_stopping(stopping_rounds=50), lgb.log_evaluation(0)]
         )
@@ -255,7 +258,3 @@ if __name__ == '__main__':
     print("\n" + "="*60)
     print("🎊 LightGBM 학습 완료!")
     print("="*60)
-    print("\n다음 단계:")
-    print("1. train_model_catboost.py 실행")
-    print("2. 3개 모델 성능 비교")
-    print("3. 앙상블 예측")

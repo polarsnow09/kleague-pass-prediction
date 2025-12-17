@@ -157,14 +157,11 @@ class PassCoordinateModel:
         
         # XGBoost 파라미터 (v2와 동일)
         params = {
-            'objective': 'reg:squarederror',
-            'max_depth': 6,
-            'learning_rate': 0.1,
-            'n_estimators': 100,
+            'max_depth': 8,           # 6 → 8
+            'learning_rate': 0.05,    # 0.1 → 0.05  
+            'n_estimators': 300,      # 100 → 300
             'subsample': 0.8,
             'colsample_bytree': 0.8,
-            'random_state': 42,
-            'n_jobs': -1
         }
         
         print(f"\n⚙️  하이퍼파라미터:")

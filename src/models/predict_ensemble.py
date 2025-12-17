@@ -270,9 +270,6 @@ def create_ensemble_submission(
     print("\n" + "=" * 60)
     print("🎊 앙상블 제출 파일 생성 완료!")
     print("=" * 60)
-    print(f"\n📈 기대 성능:")
-    print(f"  - v2 앙상블: 17.01m")
-    print(f"  - v3 앙상블: 16.90-16.98m 예상")
 
 
 if __name__ == '__main__':
@@ -282,7 +279,7 @@ if __name__ == '__main__':
     # v3 모델들 ⭐ 경로 변경!
     MODEL_PATHS = [
         MODEL_DIR / 'baseline_model_v3.pkl',  # XGBoost v3
-        MODEL_DIR / 'lgb_model_v3.pkl',       # LightGBM v3
+        MODEL_DIR / 'lgb_model_v3_optuna.pkl',       # LightGBM v3
         MODEL_DIR / 'catboost_model_v3.pkl',  # CatBoost v3
     ]
     
@@ -301,7 +298,7 @@ if __name__ == '__main__':
     
     # 앙상블 제출 파일 생성
     weights = [0.2, 0.4, 0.4]  # 검증된 최적 가중치
-    output_name = 'submission_ensemble_v3.csv'
+    output_name = 'submission_ensemble_v3_optuna.csv'
     
     create_ensemble_submission(
         test_csv=TEST_CSV,
