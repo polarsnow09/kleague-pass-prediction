@@ -297,12 +297,22 @@ if __name__ == '__main__':
         exit(1)
     
     # 앙상블 제출 파일 생성
-    weights = [0.2, 0.4, 0.4]  # 검증된 최적 가중치
-    output_name = 'submission_ensemble_v3_optuna.csv'
-    
-    create_ensemble_submission(
-        test_csv=TEST_CSV,
-        model_paths=MODEL_PATHS,
-        weights=weights, 
-        output_filename=output_name
-    )
+    test_weights = [
+        ([0.15, 0.45, 0.4], 'submission_ensemble_lgb_45.csv'),   # 1순위
+        ([0.2, 0.5, 0.3], 'submission_ensemble_lgb_50.csv'),     # 2순위
+        ([0.2, 0.35, 0.45], 'submission_ensemble_cat_45.csv'),   # 3순위
+    ]
+
+    for weights, filename in test_weights:
+        print(f"\n{'='*60}")
+        print(f"🧪 테스트: {weights}")
+        print(f"{'='*60}")
+        
+        create_ensemble_submission(
+            test_csv=TEST_CSV,
+            model_paths=MODEL_PATHS,
+            weights=weights,
+            output_filename=filename
+        )
+        
+        print(f"✅ 완료: {filename}")

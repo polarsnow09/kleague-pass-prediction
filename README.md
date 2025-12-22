@@ -167,9 +167,10 @@ python src/models/predict_ensemble.py
 reports/prompts/
 ├── 01_data_understanding.md    # 데이터 구조 파악
 ├── 02_feature_engineering.md   # 피처 설계
-└── 03_model_ensemble.md        # 앙상블 전략
+├── 03_model_ensemble.md        # 앙상블 전략
+└── 04_phase3_advanced_features.md # 고급 시계열 피처 설계 및 결과
 ```
-상세: [AI Collaboration Log](reports/prompts/03_model_ensemble.md)
+상세: [AI Collaboration Log](reports/prompts/04_phase3_advanced_features.md)
 
 ## 📝 회고
 
@@ -259,8 +260,12 @@ reports/prompts/
    - v3: 16.98m (-0.03m)
    - 예상 범위 내 달성
 
-### 다음 단계
-- [ ] 하이퍼파라미터 튜닝
+### Day 7 (2024-12-17)
+- ✅ 3개 모델들의 하이퍼파라미터 조정
+- ✅ XGBoost, lightLGB 모델의 성능 개선
+- ✅ Optuna로 lightLGB 모델을 튜닝
+- ✅ 앙상블 prediction시 모델들의 가중치 변화
+
 
 상세 내용: [reports/prompts/README.md](reports/prompts/README.md)
 
