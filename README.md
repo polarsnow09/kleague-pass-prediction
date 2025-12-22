@@ -52,38 +52,41 @@ pip install -r requirements.txt
 # 개별 모델 학습 (Phase 3)
 python src/models/train_model.py          # XGBoost
 python src/models/train_model_lgb.py      # LightGBM
+python src/models/train_model_lgb_optuna.py    # LightGBM Optuna 튜닝
 python src/models/train_model_catboost.py # CatBoost
 ```
 
 ### 앙상블 예측
 ```bash
 python src/models/predict_ensemble.py
-# 출력: submissions/submission_ensemble_v3.csv
+# 출력: submissions/submission_ensemble_v3_tuned.csv
 ```
 
 ## 📊 주요 결과
 
 ### 성능 개선 과정
-| 단계 | CV RMSE | LB Score | 개선 |
-|------|---------|----------|------|
-| Phase 1 (Baseline) | 20.36m | - | - |
-| Phase 2 (Temporal) | 18.88m | 17.23m | -7.3% |
-| Phase 2 + 2-model Ensemble | - | 17.13m | -0.6% |
-| Phase 2 + 3-model Ensemble | - | 17.01m | -0.7% |
-| **Phase 3 + 3-model Ensemble** | **18.85m** | **16.98m** | **-0.2%** |
+| 단계 | CV RMSE | LB Score | 개선 | 비고 |
+|------|---------|----------|------|------|
+| Phase 1 (Baseline) | 20.36m | - | - | 위치 피처만 |
+| Phase 2 (Temporal) | 18.88m | 17.23m | -7.3% | 시계열 피처 추가 |
+| Phase 2 + 2-model | - | 17.13m | -0.6% | XGB + LGB |
+| Phase 2 + 3-model | - | 17.01m | -0.7% | + CatBoost |
+| Phase 3 (Advanced) | 18.85m | 16.98m | -0.2% | 고급 시계열 |
+| **Phase 3 + 튜닝** | **18.83m** | **16.9724** | **최고** | 수동 튜닝 |
+| Phase 3 + Optuna | 18.76m | 16.9776 | -0.003% ❌ | 개별↑ 앙상블↓ |
 
 ### 개별 모델 성능
-| 모델 | Phase 2 (v2) | Phase 3 (v3) | 변화 |
-|------|--------------|--------------|------|
-| **XGBoost** | 18.88m | 18.91m | +0.03m |
-| **LightGBM** | 18.81m | 18.82m | +0.01m |
-| **CatBoost** | 18.97m | **18.82m** | **-0.15m** ✨ |
-| **평균** | 18.89m | 18.85m | -0.04m |
-**핵심 발견**: CatBoost가 Phase 3 피처를 가장 잘 활용!
+| 모델 | Phase 2 (v2) | Phase 3 (v3) | v3 수동 튜닝 | v3 Optuna | 변화 |
+|------|--------------|--------------|-------------|-----------|------|
+| **XGBoost** | 18.88m | 18.91m | **18.87m** | ❌ | - 0.04m |
+| **LightGBM** | 18.81m | 18.82m | 18.81m | **18.76m** | - 0.05m |
+| **CatBoost** | 18.97m | **18.82m** | 18.87m | ❌ | 기존 유지 |
+| **평균** | 18.89m | 18.85m | 18.85m | **18.83m** | -0.02m |
+**핵심 발견**: CatBosst 이외의 나머지 모델들은 튜닝으로 성능 향상을 보임
 
 ### 공모전 제출
-- **Public LB**: 16.981553967 RMSE
-- **순위**: 300/540 (상위 약 56%)
+- **Public LB**: 16.9724 RMSE
+- **순위**: 374/687 (상위 약 54%)
 - **일반화 성능**: 베이스라인 대비 약 -16.6% 개선 
 
 ### 피처 개발
@@ -168,9 +171,10 @@ reports/prompts/
 ├── 01_data_understanding.md    # 데이터 구조 파악
 ├── 02_feature_engineering.md   # 피처 설계
 ├── 03_model_ensemble.md        # 앙상블 전략
-└── 04_phase3_advanced_features.md # 고급 시계열 피처 설계 및 결과
+├── 04_phase3_advanced_features.md # 고급 시계열 피처
+└── 05_hyperparameter_tuning.md # 하이퍼파라미터 & 가중치 최적화
 ```
-상세: [AI Collaboration Log](reports/prompts/04_phase3_advanced_features.md)
+상세: [AI Collaboration Log](reports/prompts/05_hyperparameter_tuning.md)
 
 ## 📝 회고
 
@@ -227,7 +231,7 @@ reports/prompts/
    - 예상 범위 내 개선 : 0.1m 개선
    - 여러 기법 조합으로 큰 효과
 
-### Day 5 (2024-12-15)
+### Day 5 (2025-12-15)
 - ✅ Phase 3 피처 23개 생성
 - ✅ 극단값 문제 발견 및 수정
 - ✅ 피처 선택 (23개 → 6개)
@@ -242,7 +246,7 @@ reports/prompts/
    - 23개 전체: 18.99m (악화)
    - 6개 선별: 18.91m (회복)
 
-### Day 6 (2024-12-16)
+### Day 6 (2025-12-16)
 - ✅ LightGBM v3 학습 (18.82m)
 - ✅ CatBoost v3 학습 (18.82m)
 - ✅ 3개 모델 종합 분석
@@ -260,11 +264,39 @@ reports/prompts/
    - v3: 16.98m (-0.03m)
    - 예상 범위 내 달성
 
-### Day 7 (2024-12-17)
-- ✅ 3개 모델들의 하이퍼파라미터 조정
-- ✅ XGBoost, lightLGB 모델의 성능 개선
-- ✅ Optuna로 lightLGB 모델을 튜닝
-- ✅ 앙상블 prediction시 모델들의 가중치 변화
+### Day 7 (2025-12-17~2025-12-22)
+- ✅ 하이퍼파라미터 수동 튜닝
+  - XGBoost: 18.91m → 18.87m (-0.04m)
+  - LightGBM: 18.82m → 18.81m (-0.01m)
+  - CatBoost: 유지 (18.82m)
+  - 앙상블 결과 : **[0.2, 0.4, 0.4] : 16.9724**
+- ✅ Optuna 자동 튜닝 (LightGBM)
+  - 최적 파라미터 탐색 (100회 trial)
+  - CV 성능: 18.81m → 18.76m (-0.05m)
+- ✅ Optuna 튜닝 후 앙상블 가중치 최적화 실험 (4개 조합)
+  - [0.3, 0.3, 0.4]: 16.9912 ❌
+  - [0.15, 0.45, 0.4]: 16.9778 ❌
+  - [0.2, 0.5, 0.3]: 16.9905 ❌
+  - [0.2, 0.35, 0.45]: 16.9776 ❌
+- ✅ 기존 수동 튜닝 후 기존 가중치로 앙상블을 진행한 결과가 가장 좋은 결과를 보임 
+  - **기존 [0.2, 0.4, 0.4]: 16.9724 ✅ 여전히 최고**
+
+#### 주요 학습
+1. **개별 성능 ≠ 앙상블 기여도**
+   - Optuna LGB(18.76m)가 개별 최고
+   - 앙상블에서는 기존 LGB(18.81m)와 동일
+   - 다양성 > 개별 우수성
+
+2. **하이퍼파라미터 튜닝의 한계**
+   - 수동: -0.02m 개선
+   - Optuna: -0.05m 개선 (개별)
+   - 앙상블: ±0.00m (점수가 나빠짐)
+   - → 일정 수준 이상에선 피처가 더 중요
+
+3. **실험의 가치**
+   - 실패한 실험도 중요한 정보
+   - 가중치 최적화 불필요 확인
+   - 다음 방향성 명확화 (피처 개발)
 
 
 상세 내용: [reports/prompts/README.md](reports/prompts/README.md)
