@@ -28,7 +28,7 @@ print("=" * 60)
 
 # 1. 데이터 로드
 print("\n📂 데이터 로드 중...")
-df = pd.read_csv(DATA_DIR / 'train_final_passes_v4.csv')
+df = pd.read_csv(DATA_DIR / 'train_final_passes_v6.csv')
 print(f"✅ Shape: {df.shape}")
 
 # 2. 피처 및 타겟 분리
@@ -219,7 +219,7 @@ oof_df = pd.DataFrame({
 })
 
 # 저장
-output_path = OUTPUT_DIR / 'oof_predictions.csv'
+output_path = OUTPUT_DIR / 'oof_predictions_v6.csv'
 oof_df.to_csv(output_path, index=False)
 print(f"✅ 저장 완료: {output_path}")
 print(f"   Shape: {oof_df.shape}")
