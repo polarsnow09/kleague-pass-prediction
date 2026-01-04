@@ -6,13 +6,13 @@
 - **목표**: K리그의 실제 경기 데이터를 기반으로, 단편적인 이벤트의 나열을 넘어 특정 상황의 맥락을 AI가 학습하고, 이어지는 패스가 도달할 최적의 위치를 예측하는 것. 나아가 이를 통해 데이터 기반의 선수 평가 및 전술 분석에 대한 새로운 가능성을 발굴하고자 함.
 - **기간**: 2025.12.10 ~ 2026.01.12
 - **역할**: 데이터 분석, 모델링, AI 도구 활용 전략 수립
-- **성과**: Public LB **16.5316** (상위 약 55%, 452/816) ⭐ **최고 기록!**
+- **성과**: Public LB **16.5316** (상위 약 55%, 484/872) ⭐ **최고 기록!**
 
 ## 🛠️ 기술 스택
 - **언어**: Python 3.10
 - **라이브러리**: pandas, numpy, scikit-learn
 - **모델**: XGBoost, LightGBM, CatBoost
-- **기법**: 시계열 피처 엔지니어링, 도메인 특화 피처, **Stacking 앙상블**, K-Fold CV, Meta-Learning
+- **기법**: 시계열 피처 엔지니어링, 도메인 특화 피처, **Stacking 앙상블**, K-Fold CV, Meta-Learning, 에러 분석 기반 타겟팅
 
 ## 📂 프로젝트 구조
 ```
@@ -23,33 +23,43 @@ kleague-pass-prediction/
 │       ├── train_final_passes_v2.csv  # Phase 2
 │       ├── train_final_passes_v3.csv  # Phase 3
 │       ├── train_final_passes_v4.csv  # Phase 4
-│       └── oof_predictions.csv        # Phase 5 OOF 예측 ⭐ NEW!
+│       ├── train_final_passes_v6.csv  # Phase 6 ⭐ NEW!
+│       └── oof_predictions.csv        # Phase 5 OOF 예측
 ├── models/                     # 학습된 모델 (.pkl)
 │   ├── baseline_model_v4.pkl
 │   ├── lgb_model_v4.pkl
 │   ├── catboost_model_v4.pkl
-│   ├── meta_ridge_x.pkl        # Meta-Learner (Ridge) ⭐ NEW!
+│   ├── baseline_model_v6.pkl   # Phase 6 ⭐ NEW!
+│   ├── lgb_model_v6.pkl        # Phase 6 ⭐ NEW!
+│   ├── catboost_model_v6.pkl   # Phase 6 ⭐ NEW!
+│   ├── label_encoders_v6.pkl   # Phase 6 ⭐ NEW!
+│   ├── meta_ridge_x.pkl        # Meta-Learner (Ridge)
 │   ├── meta_ridge_y.pkl
-│   ├── meta_lgb_x.pkl          # Meta-Learner (LightGBM) ⭐ NEW!
+│   ├── meta_lgb_x.pkl          # Meta-Learner (LightGBM)
 │   └── meta_lgb_y.pkl
 ├── src/
 │   ├── features/               # 피처 생성 모듈
 │   │   ├── build_feature.py    # Phase 1, 2
-│   │   └── advanced_features.py # Phase 3
+│   │   ├── advanced_features.py # Phase 3
+│   │   └── build_phase6_features.py # Phase 6 ⭐ NEW!
 │   └── models/                 # 모델 학습/예측
 │       ├── train_model_v4.py
 │       ├── train_model_lgb_v4.py
 │       ├── train_model_catboost_v4.py
+│       ├── train_all_models_v6.py       # Phase 6 통합 학습 ⭐ NEW!
 │       ├── predict_ensemble_v4.py
-│       ├── generate_oof_predictions.py  # OOF 생성 ⭐ NEW!
-│       ├── train_meta_learner.py        # Meta-Learner 학습 ⭐ NEW!
-│       └── predict_stacking.py          # Stacking 예측 ⭐ NEW!
+│       ├── generate_oof_predictions.py
+│       ├── train_meta_learner.py
+│       ├── predict_stacking.py
+│       └── predict_stacking_v6.py       # Phase 6 예측 ⭐ NEW!
 ├── reports/
 │   ├── figures/                # 시각화
 │   └── prompts/                # AI 협업 로그
-│       └── 07_stacking_ensemble.md ⭐ NEW!
+│       ├── 07_stacking_ensemble.md
+│       └── 08_phase6_error_analysis.md  ⭐ NEW!
 ├── submissions/                # 제출 파일
-│   └── submission_stacking_lgb.csv ⭐ NEW!
+│   ├── submission_stacking_lgb.csv  # Phase 5 (16.5316) 🥇
+│   └── submission_stacking_v6.csv   # Phase 6 (16.5622) ⭐ NEW!
 └── README.md
 ```
 
@@ -58,6 +68,20 @@ kleague-pass-prediction/
 ### 환경 설정
 ```bash
 pip install -r requirements.txt
+```
+
+### Phase 6: 에러 분석 기반 타겟팅 (최신 시도) ⭐
+```bash
+# 1. Phase 6 피처 생성
+# build_phase6_features.py가 자동으로 호출됨
+
+# 2. Phase 6 모델 학습 (3개 통합)
+python src/models/train_all_models_v6.py
+# 출력: models/baseline_model_v6.pkl, lgb_model_v6.pkl, catboost_model_v6.pkl
+
+# 3. Phase 6 Stacking 예측
+python src/models/predict_stacking_v6.py
+# 출력: submissions/submission_stacking_v6.csv
 ```
 
 ### Phase 5: Stacking 앙상블 (최신) ⭐
@@ -99,9 +123,15 @@ python src/models/predict_ensemble_v4.py
 | Phase 3 (Advanced) | 18.85m | 16.98m | -0.2% | 고급 시계열 |
 | Phase 3 + 튜닝 | 18.83m | 16.9724 | -0.2% | 수동 튜닝 |
 | Phase 4 (Domain) | 18.70m | 16.8272 | -0.9% | 도메인 특화 |
-| **Phase 5 (Stacking)** | **12.84m** | **16.5316** | **-1.8%** ✨✨ | **Meta-Learning** |
+| **Phase 5 (Stacking)** | **12.84m** | **16.5316** | **-1.8%** 🥇 | **Meta-Learning** |
+| Phase 6 (Error Analysis) | TBD | 16.5622 | +0.2% ⚠️ | 에러 타겟팅 |
 
 **총 개선**: 20.36m → 16.53m (**-18.8%**, 3.83m) 🎉
+
+**Phase 6 결과**: 
+- LB 16.5622 (+0.03m vs Phase 5)
+- 에러 분석 기반 피처 추가했으나 성능 미개선
+- Phase 5가 여전히 최고 기록 유지
 
 ### Phase 5: Stacking 앙상블 상세
 
@@ -150,36 +180,43 @@ python src/models/predict_ensemble_v4.py
 - CatBoost의 다양성이 가장 중요
 
 ### 개별 모델 성능
-| 모델 | Phase 2 (v2) | Phase 3 (v3) | v3 튜닝 | Phase 4 (v4) | **OOF (Phase 5)** |
-|------|--------------|--------------|---------|--------------|-------------------|
-| **XGBoost** | 18.88m | 18.91m | 18.87m | 18.73m | **13.40m** |
-| **LightGBM** | 18.81m | 18.82m | 18.81m | 18.64m | **13.36m** |
-| **CatBoost** | 18.97m | 18.82m | 18.82m | 18.73m | **13.30m** ⭐ |
-| **평균** | 18.89m | 18.85m | 18.83m | 18.70m | **13.35m** |
-| **Meta (LGB)** | - | - | - | - | **12.84m** ⭐⭐ |
+| 모델 | Phase 2 (v2) | Phase 3 (v3) | v3 튜닝 | Phase 4 (v4) | **OOF (Phase 5)** | Phase 6 (v6) |
+|------|--------------|--------------|---------|--------------|-------------------|--------------|
+| **XGBoost** | 18.88m | 18.91m | 18.87m | 18.73m | **13.40m** | TBD |
+| **LightGBM** | 18.81m | 18.82m | 18.81m | 18.64m | **13.36m** | TBD |
+| **CatBoost** | 18.97m | 18.82m | 18.82m | 18.73m | **13.30m** ⭐ | TBD |
+| **평균** | 18.89m | 18.85m | 18.83m | 18.70m | **13.35m** | TBD |
+| **Meta (LGB)** | - | - | - | - | **12.84m** ⭐⭐ | - |
 
 **주의**: OOF는 CV 성능이므로 전체 학습보다 낮음 (과적합 없음)
 
 ### 공모전 제출
-- **Public LB**: 16.5316 RMSE ⭐ **최고 기록!**
+- **Public LB (최고)**: 16.5316 RMSE 🥇 **Phase 5 Stacking**
+- **Public LB (Phase 6)**: 16.5622 RMSE (Phase 5 대비 +0.03m)
 - **순위**: 452/816 (상위 약 55%)
 - **일반화 성능**: 베이스라인 대비 약 **-18.8%** 개선 
-- **Phase 4 대비**: -0.30m (-1.8%) 추가 개선
+- **Phase 4 대비**: -0.30m (-1.8%) 추가 개선 (Phase 5)
 
 ### 앙상블 방식 비교
-| 방식 | Phase 4 | Phase 5 | 개선 |
-|------|---------|---------|------|
+| 방식 | Phase 4 | Phase 5 | Phase 6 |
+|------|---------|---------|---------|
 | **가중 평균** | 16.83m | - | - |
-| **Stacking** | - | 16.53m | **-0.30m** |
+| **Stacking** | - | **16.53m** 🥇 | 16.56m |
 
 **Stacking의 장점**:
 1. 비선형 조합 가능
 2. Base 모델 간 상호작용 학습
 3. 과적합 방지 (OOF 사용)
 
-### 피처 개발
+**Phase 6 결과 분석**:
+- 에러 분석 기반 23개 피처 추가
+- mean end_x: 66.9m (Phase 5 대비 +15m, 과도한 공격성)
+- LB 결과: Phase 5보다 0.03m 악화
+- 교훈: 최적점에서 추가 피처는 노이즈 될 수 있음
 
-#### Phase 1: 위치 기반 피처 (8개)
+## 📈 피처 개발
+
+### Phase 1: 위치 기반 피처 (8개)
 ```python
 - start_x, start_y              # 시작 좌표
 - dist_to_target_goal           # 골대까지 거리
@@ -189,7 +226,7 @@ python src/models/predict_ensemble_v4.py
 ```
 **효과**: CV 20.36m (베이스라인)
 
-#### Phase 2: 시계열 피처 (7개)
+### Phase 2: 시계열 피처 (7개)
 ```python
 - prev_end_x, prev_end_y        # 이전 액션 종료 위치
 - prev_action_distance          # 이전 액션과의 거리
@@ -199,7 +236,7 @@ python src/models/predict_ensemble_v4.py
 ```
 **효과**: CV 18.88m (**-7.3%** 개선)
 
-#### Phase 3: 고급 시계열 피처 (선별 6개)
+### Phase 3: 고급 시계열 피처 (선별 6개)
 ```python
 # 속도 관련
 - pass_velocity                 # 패스 속도 (m/s)
@@ -215,7 +252,7 @@ python src/models/predict_ensemble_v4.py
 ```
 **효과**: CV 18.85m (**-0.2%** 추가 개선)
 
-#### Phase 4: 도메인 특화 피처 (9개)
+### Phase 4: 도메인 특화 피처 (9개)
 ```python
 # 선수 스타일 (4개)
 - player_avg_pass_distance      # 선수 평균 패스 거리
@@ -239,7 +276,7 @@ python src/models/predict_ensemble_v4.py
 - 경기 진행률(시간)이 패스 패턴 결정
 - 득점차가 공격 성향에 영향
 
-#### Phase 5: Meta-Features (6개) ⭐ NEW!
+### Phase 5: Meta-Features (6개)
 ```python
 # Base 모델 예측값 (6개 → 2개로 압축)
 - xgb_pred_x, xgb_pred_y        # XGBoost 예측
@@ -248,14 +285,77 @@ python src/models/predict_ensemble_v4.py
 ```
 **효과**: 
 - CV 12.84m (Meta-Learner 학습 성능)
-- LB 16.53m (**-1.8%** 추가 개선) ⭐
+- LB 16.53m (**-1.8%** 추가 개선) 🥇
 
 **핵심 인사이트**:
 - 모델 간 다양성이 핵심 (상관계수 0.98+인데도 개선!)
 - 비선형 조합이 선형보다 우수 (LGB > Ridge)
 - 교차 좌표(x↔y) 정보도 유용
 
-## 📈 피처 중요도 분석
+### Phase 6: 에러 분석 기반 타겟팅 피처 (23개) ⭐ NEW!
+
+**전략 1: 구역별 특화 (5개)**
+```python
+- is_defensive_zone           # 수비 구역 여부
+- defensive_uncertainty       # 수비 구역 불확실성
+- player_style_in_defense     # 수비 구역 선수 스타일
+- is_defensive_center         # 중앙 수비 구역
+- pressure_zone_interaction   # 구역-압박 상호작용
+```
+
+**전략 2: 최종 구역 미진입 타겟팅 (4개)**
+```python
+- attack_failure_risk         # 공격 실패 리스크
+- stuck_in_midfield          # 중원 정체
+- buildup_style              # 빌드업 스타일
+- attack_momentum            # 공격 모멘텀
+```
+
+**전략 3: 측면 vs 중앙 차별화 (4개)**
+```python
+- central_uncertainty        # 중앙 불확실성
+- wing_attack_pattern        # 측면 공격 패턴
+- cross_likelihood           # 크로스 가능성
+- wing_central_balance       # 측면-중앙 균형
+```
+
+**전략 4: 득점 상황별 전술 변화 (3개)**
+```python
+- leading_defensive          # 리드 시 수비적
+- losing_aggressive          # 지는 상황 공격적
+- endgame_pressure          # 경기 후반 압박
+```
+
+**전략 5: 극단값 특수 처리 (3개)**
+```python
+- near_boundary             # 경계 근처
+- extreme_pass              # 극단적 패스
+- abnormal_situation        # 비정상 상황
+```
+
+**보너스: 상호작용 (4개)**
+```python
+- zone_final_interaction    # 구역-최종 진입
+- wing_pressure_interaction # 측면-압박
+- player_zone_interaction   # 선수-구역
+```
+
+**효과**: 
+- LB 16.56m (Phase 5 대비 **+0.03m 악화**)
+- mean end_x: 66.9m (Phase 5 대비 +15m, 과도한 공격성)
+
+**핵심 발견**:
+- 에러 분석 → 타겟팅 피처 전략의 한계
+- 큰 오차 케이스는 원래 예측 어려운 케이스
+- 추가 피처가 노이즈로 작용 가능
+- **Phase 5 Stacking이 이미 최적점** ✅
+
+**기술적 도전**:
+- category dtype 3번의 에러 극복
+- `np.select()` 활용한 안전한 구역 생성
+- pandas dtype 전문 지식 습득
+
+## 🎓 피처 중요도 분석
 
 ### Phase 4 피처 중요도 (모델별)
 
@@ -293,8 +393,9 @@ python src/models/predict_ensemble_v4.py
 - 도메인 지식 기반 피처가 실제로 효과적임을 입증
 
 ## 🤖 AI 협업 전략
+
 ### Claude 활용 방법
-1. **피처 아이디어 생성**: 50+ 프롬프트
+1. **피처 아이디어 생성**: 60+ 프롬프트
 2. **코드 리뷰 및 디버깅**: 실시간 오류 수정
 3. **전략 수립**: 앙상블 가중치, 피처 선택, Stacking 설계
 4. **문서화**: 체계적 프롬프트 로그
@@ -308,11 +409,12 @@ reports/prompts/
 ├── 04_phase3_advanced_features.md     # 고급 시계열 피처
 ├── 05_hyperparameter_tuning.md        # 하이퍼파라미터 & 가중치 최적화
 ├── 06_phase4_domain_features.md       # 도메인 특화 피처
-└── 07_stacking_ensemble.md            # Stacking 앙상블 ⭐ NEW!
+├── 07_stacking_ensemble.md            # Stacking 앙상블
+└── 08_phase6_error_analysis.md        # 에러 분석 & 타겟팅 ⭐ NEW!
 ```
 상세: [AI Collaboration Log](reports/prompts/)
 
-## 📝 회고
+## 📝 프로젝트 회고
 
 ### Day 1-3 (2025-12-11 ~ 12-13)
 - ✅ 프로젝트 구조 설계 및 Git 설정
@@ -323,11 +425,11 @@ reports/prompts/
 - ✅ End-to-end ML 파이프라인 구축
 - ✅ 첫 제출 성공 (LB 17.23)
 
-#### 핵심 학습
-1. **시계열 피처의 중요성**: 7개 피처로 7.3% 성능 개선
-2. **과적합 방지**: CV 18.88 vs LB 17.23 (일반화 우수)
-3. **파이프라인 구축**: 재현 가능한 ML 워크플로우
-4. **AI 활용 전략**: 체계적 프롬프트 엔지니어링
+**핵심 학습:**
+1. 시계열 피처의 중요성: 7개 피처로 7.3% 성능 개선
+2. 과적합 방지: CV 18.88 vs LB 17.23 (일반화 우수)
+3. 파이프라인 구축: 재현 가능한 ML 워크플로우
+4. AI 활용 전략: 체계적 프롬프트 엔지니어링
 
 ### Day 4 (2025-12-14)
 - ✅ CatBoost 모델 개발 (CV RMSE 18.97m)
@@ -335,14 +437,9 @@ reports/prompts/
 - ✅ LB 점수 개선 (17.13 → 17.03)
 - ✅ 가중치 실험 및 최적화
 
-#### 주요 학습
-1. **모델 다양성의 중요성**
-   - 각 모델이 완전히 다른 패턴 학습
-   - 앙상블로 장점 결합
-
-2. **가중치 최적화**
-   - [0.2, 0.4, 0.4]가 최적
-   - XGBoost 감소가 효과적
+**주요 학습:**
+1. 모델 다양성의 중요성: 각 모델이 완전히 다른 패턴 학습
+2. 가중치 최적화: [0.2, 0.4, 0.4]가 최적
 
 ### Day 5-6 (2025-12-15 ~ 12-16)
 - ✅ Phase 3 피처 23개 생성
@@ -351,14 +448,9 @@ reports/prompts/
 - ✅ 3개 모델 v3 학습 완료
 - ✅ 앙상블 LB 16.98m 달성
 
-#### 주요 학습
-1. **피처 품질 > 피처 수량**
-   - 23개 전체: 악화
-   - 6개 선별: 회복
-
-2. **극단값 처리의 중요성**
-   - pass_velocity: 853 → 40 m/s
-   - 데이터 품질 = 모델 품질
+**주요 학습:**
+1. 피처 품질 > 피처 수량
+2. 극단값 처리의 중요성: pass_velocity 853 → 40 m/s
 
 ### Day 7 (2025-12-17 ~ 12-22)
 - ✅ 하이퍼파라미터 수동 튜닝
@@ -366,157 +458,173 @@ reports/prompts/
 - ✅ 앙상블 가중치 실험 (4개 조합)
 - ✅ 최종 결론: 기존 설정 유지
 
-#### 주요 학습
-1. **개별 성능 ≠ 앙상블 기여도**
-   - Optuna LGB(18.76m)가 개별 최고
-   - 앙상블에서는 기존 LGB와 동일
-   - 다양성 > 개별 우수성
-
-2. **하이퍼파라미터 튜닝의 한계**
-   - 수동: -0.02m 개선
-   - Optuna: -0.05m 개선 (개별)
-   - 앙상블: ±0.00m
-   - → 피처 개발이 더 중요
+**주요 학습:**
+1. 개별 성능 ≠ 앙상블 기여도
+2. 하이퍼파라미터 튜닝의 한계: 피처 개발이 더 중요
 
 ### Day 8-10 (2025-12-23 ~ 12-28)
 - ✅ Phase 4 피처 설계 (도메인 특화)
-- ✅ 선수별 통계 계산 (경기별 누적)
-- ✅ 팀별 통계 계산
-- ✅ 경기 흐름 피처 생성
+- ✅ 선수별/팀별/경기 흐름 통계 계산
 - ✅ 3개 모델 v4 재학습
 - ✅ 앙상블 LB 16.8272 달성
 
-#### 핵심 학습
-1. **도메인 지식의 가치**
-   - 선수 스타일이 예측에 핵심적
-   - 경기 흐름(시간, 득점차)이 중요
-   - CV -0.15m, LB -0.14m 개선
+**핵심 학습:**
+1. 도메인 지식의 가치: 선수 스타일이 예측에 핵심적
+2. 누적 통계의 효과: 경기별로 이전 경기 통계 사용
+3. 점진적 개선의 누적: Phase 1-4 총 -8.2% 개선
 
-2. **누적 통계의 효과**
-   - 경기별로 이전 경기 통계 사용
-   - 시간에 따라 누적 → 현실적
-   - 신규 선수는 전체 평균 활용
-
-3. **점진적 개선의 누적**
-   ```
-   Phase 1: 20.36m (베이스라인)
-   Phase 2: 18.88m (-7.3%)
-   Phase 3: 18.85m (-0.2%)
-   Phase 4: 18.70m (-0.8%) ← 누적 -8.2%!
-   ```
-
-상세 내용: [reports/prompts/06_phase4_domain_features.md](reports/prompts/06_phase4_domain_features.md)
-
-### Day 11-12 (2025-12-29 ~ 12-30) ⭐ NEW!
+### Day 11-12 (2025-12-29 ~ 12-30)
 - ✅ Stacking 앙상블 설계
 - ✅ OOF 예측 생성 (5-Fold CV)
 - ✅ Meta-Learner 학습 (Ridge vs LightGBM)
 - ✅ Stacking 예측 파이프라인 구축
 - ✅ 최종 제출: LB **16.5316** (최고 기록!)
 
-#### 핵심 학습
+**핵심 학습:**
+1. **Stacking의 위력**: 가중 평균 16.83m → Stacking 16.53m (-0.30m)
+2. **OOF의 중요성**: 과적합 없는 순수 일반화 성능 (13.35m)
+3. **Meta-Learner 선택**: LightGBM이 Ridge보다 0.35m 우수
+4. **모델 다양성**: 상관계수 0.98+인데도 0.3m 개선
+5. **교차 좌표 효과**: end_x 예측에 y 정보도 활용
+6. **구조적 개선**: Phase 3-4 피처 실험 +0.18m < Phase 5 Stacking +0.30m
 
-1. **Stacking의 위력**
-   ```
-   가중 평균: 16.83m
-   Stacking:  16.53m (-0.30m, -1.8%)
-   
-   → 비선형 조합의 효과!
-   ```
+### Day 13 (2026-01-03) ⭐ NEW!
+- ✅ Phase 6 에러 분석 및 타겟팅 피처 설계
+- ✅ 23개 에러 타겟팅 피처 생성
+- ✅ dtype 에러 3번 극복 (category, object → int)
+- ✅ `np.select()` 활용한 안전한 구현
+- ✅ Phase 6 모델 학습 및 예측
+- ✅ 제출: LB 16.5622 (Phase 5 대비 +0.03m)
 
-2. **OOF의 중요성**
-   - 5-Fold CV로 Data Leakage 완전 방지
-   - OOF RMSE: 13.35m (과적합 없는 순수 성능)
-   - Train 전체: 18.70m (과적합 포함)
-   - **OOF가 실제 일반화 성능을 정확히 반영!**
+**핵심 학습:**
+1. **에러 분석의 함정**: 큰 오차 케이스 = 원래 예측 어려운 케이스 → 노이즈
+2. **과도한 공격성**: mean end_x 66.9m (+15m) → 실제는 더 보수적
+3. **dtype 지옥 극복**: category/object 에러 3번 → `np.select()` 해결
+4. **최적점의 인식**: Phase 5 이미 최적 → 추가 피처는 리스크
+5. **구조 vs 피처**: Stacking +0.30m > Phase 6 피처 -0.03m
+6. **실패의 가치**: Stacking 우수성 재확인, dtype 전문가 됨
 
-3. **Meta-Learner 선택**
-   - Ridge: 13.19m (선형 조합)
-   - LightGBM: 12.84m (비선형 조합)
-   - **LightGBM이 0.35m 더 우수!**
-   - → Base 모델 간 비선형 상호작용 존재
+## 🎯 다음 단계
 
-4. **모델 다양성의 재발견**
-   ```
-   상관계수: 0.98+ (거의 동일한 예측)
-   But Meta-Learner: 여전히 0.3m 개선
-   
-   → 미묘한 차이가 중요!
-   ```
+### 현재 상황
+- ✅ Phase 5 Stacking: 16.5316m 🥇 **최고 기록 확정**
+- ⚠️ Phase 6 에러 분석: 16.5622m (효과 없음)
+- 📊 총 13일간 6개 Phase 진행
 
-5. **교차 좌표의 효과**
-   - end_x 예측에 lgb_pred_y 사용 (168 중요도)
-   - end_y 예측에 cat_pred_x 사용 (145 중요도)
-   - **좌표 간 상호작용 존재!**
+### 고려 중인 방향
 
-6. **실무적 교훈**
-   ```
-   개별 모델 튜닝 < Meta-Learning
-   
-   Phase 3-4: 수많은 피처 실험 → +0.18m
-   Phase 5: Stacking → +0.30m
-   
-   → 구조적 개선이 더 효과적!
-   ```
+#### 옵션 1: 프로젝트 마무리 (추천!)
+```
+✅ Phase 5를 최종 제출로 확정
+✅ README 및 문서 정리
+✅ 포트폴리오 작성
+✅ 다음 프로젝트로 이동
+```
 
-7. **기술적 성과**
-   - 완전 재현 가능한 Stacking 파이프라인
-   - OOF → Meta → Test 3단계 구조
-   - 범주형 피처 인코딩 일관성 유지
-   - Phase 4 통계 완벽 통합
+#### 옵션 2: 추가 실험 (선택)
+```
+- 2-Level Stacking
+- Neural Network Meta-Model
+- SHAP values 분석
+- 예측 실패 케이스 딥다이브
+- Phase 6 피처 선택 (상위 5개만)
+```
 
-상세 내용: [reports/prompts/07_stacking_ensemble.md](reports/prompts/07_stacking_ensemble.md)
-
-## 📝 종료 후 회고
-(프로젝트 종료 후 작성)
-
-## 🎯 다음 단계 (고려중)
-
-### 단기
-- [ ] 다른 Meta-Learner 실험
-  - Neural Network Meta-Model
-  - 2-Level Stacking
-  
-- [ ] 앙상블 다양성 증대
-  - 다른 하이퍼파라미터 조합
-  - Feature Selection 다양화
-
-### 중기
-- [ ] SHAP values 분석
-  - Base 모델 해석
-  - Meta-Learner 해석
-  
-- [ ] 예측 실패 케이스 분석
-  - 큰 오차 발생 패턴
-  - 개선 방향 도출
-
-### 장기
-- [ ] 딥러닝 모델 (LSTM, Transformer)
-- [ ] 실시간 예측 시스템
-- [ ] 도메인 전문가 피드백
-
+#### 옵션 3: 다른 접근
+```
+- Blending (Phase 5 + Phase 6)
+- 앙상블 다양성 증대
+- 딥러닝 모델 (LSTM, Transformer)
+```
 ---
 
-**⭐ 프로젝트 하이라이트**
+## 🏆 프로젝트 하이라이트
+
+### 성과
 ```
 시작: CV 20.36m
-현재: CV 12.84m (Meta-Learner), LB 16.5316
+현재: CV 12.84m (Meta-Learner), LB 16.5316 🥇
 
 총 개선: -18.8% (3.83m)
 핵심 기법: 시계열 + 도메인 특화 + Stacking 앙상블
 ```
 
-**🏆 주요 성과**
-- 체계적 피처 엔지니어링 (5 phases, 48개 피처)
-- **Stacking 앙상블** (OOF + Meta-Learning)
-- 3-model 앙상블 최적화
-- AI 기반 개발 프로세스 구축
-- 완전 재현 가능한 파이프라인
+### 주요 성과
+- ✅ 체계적 피처 엔지니어링 (6 phases, 71개 피처)
+- ✅ **Stacking 앙상블** (OOF + Meta-Learning)
+- ✅ 3-model 앙상블 최적화
+- ✅ AI 기반 개발 프로세스 구축
+- ✅ 완전 재현 가능한 파이프라인
+- ✅ **dtype 전문가 됨** (3번의 에러 극복)
 
-**📊 최종 스코어보드**
+### 최종 스코어보드
 | 항목 | 수치 | 비고 |
 |------|------|------|
-| Public LB | 16.5316 | 최고 기록 ⭐ |
+| Public LB (최고) | 16.5316 | Phase 5 Stacking 🥇 |
+| Public LB (Phase 6) | 16.5622 | 에러 분석 시도 |
 | 순위 | 452/816 | 상위 55% |
 | 총 개선 | -18.8% | 베이스라인 대비 |
 | Phase 5 개선 | -1.8% | Phase 4 대비 |
+| 총 개발 기간 | 13일 | 6 phases |
+
+---
+
+## 📚 핵심 교훈
+
+### 1. 구조적 개선 > 피처 개선
+```
+Phase 3-4: 수많은 피처 실험 → +0.18m
+Phase 5: Stacking (구조 변경) → +0.30m
+Phase 6: +23개 피처 → -0.03m (악화)
+
+→ 구조적 개선이 더 효과적!
+```
+
+### 2. 최적점의 인식
+```
+Phase 5 Stacking: 이미 최적
+Phase 6 추가 시도: 노이즈
+
+→ "멈출 때를 아는 것"도 능력
+```
+
+### 3. 실패도 학습
+```
+Phase 6 실패를 통해:
+✅ Stacking 우수성 재확인
+✅ 피처의 한계 이해
+✅ dtype 전문가 됨
+✅ 실험 설계 능력 향상
+```
+
+### 4. 모델 다양성 > 개별 우수성
+```
+상관계수 0.98+ (거의 동일)
+But Stacking: +0.30m 개선
+
+→ 미묘한 차이가 중요!
+```
+
+### 5. OOF의 중요성
+```
+OOF: 13.35m (과적합 없음)
+Train: 18.70m (과적합 포함)
+
+→ OOF가 진짜 일반화 성능
+```
+
+---
+
+## 📖 참고 자료
+
+### 문서
+- [AI Collaboration Log](reports/prompts/): 8개 프롬프트 로그
+- [Phase 6 Error Analysis](reports/prompts/08_phase6_error_analysis.md): 에러 분석 전체 과정
+
+### 코드
+- [피처 생성](src/features/): Phase 1-6 피처 모듈
+- [모델 학습](src/models/): 학습 및 예측 스크립트
+- [제출 파일](submissions/): 전체 제출 이력
+
+---
+
