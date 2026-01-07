@@ -10,9 +10,9 @@
 
 ## 🛠️ 기술 스택
 - **언어**: Python 3.10
-- **라이브러리**: pandas, numpy, scikit-learn
-- **모델**: XGBoost, LightGBM, CatBoost
-- **기법**: 시계열 피처 엔지니어링, 도메인 특화 피처, **Stacking 앙상블**, K-Fold CV, Meta-Learning, 에러 분석 기반 타겟팅
+- **라이브러리**: pandas, numpy, scikit-learn, **PyTorch**
+- **모델**: XGBoost, LightGBM, CatBoost, **Neural Network (MLP)**
+- **기법**: 시계열 피처 엔지니어링, 도메인 특화 피처, **Stacking 앙상블**, K-Fold CV, **Meta-Learning (Ridge, LightGBM, MLP)**, 에러 분석 기반 타겟팅
 
 ## 📂 프로젝트 구조
 ```
@@ -23,43 +23,49 @@ kleague-pass-prediction/
 │       ├── train_final_passes_v2.csv  # Phase 2
 │       ├── train_final_passes_v3.csv  # Phase 3
 │       ├── train_final_passes_v4.csv  # Phase 4
-│       ├── train_final_passes_v6.csv  # Phase 6 ⭐ NEW!
+│       ├── train_final_passes_v6.csv  # Phase 6
 │       └── oof_predictions.csv        # Phase 5 OOF 예측
 ├── models/                     # 학습된 모델 (.pkl)
 │   ├── baseline_model_v4.pkl
 │   ├── lgb_model_v4.pkl
 │   ├── catboost_model_v4.pkl
-│   ├── baseline_model_v6.pkl   # Phase 6 ⭐ NEW!
-│   ├── lgb_model_v6.pkl        # Phase 6 ⭐ NEW!
-│   ├── catboost_model_v6.pkl   # Phase 6 ⭐ NEW!
-│   ├── label_encoders_v6.pkl   # Phase 6 ⭐ NEW!
+│   ├── baseline_model_v6.pkl   # Phase 6
+│   ├── lgb_model_v6.pkl
+│   ├── catboost_model_v6.pkl
+│   ├── label_encoders_v6.pkl
 │   ├── meta_ridge_x.pkl        # Meta-Learner (Ridge)
 │   ├── meta_ridge_y.pkl
-│   ├── meta_lgb_x.pkl          # Meta-Learner (LightGBM)
-│   └── meta_lgb_y.pkl
+│   ├── meta_lgb_x.pkl          # Meta-Learner (LightGBM) ⭐
+│   ├── meta_lgb_y.pkl
+│   ├── meta_mlp_x.pkl          # Meta-Learner (MLP) 🆕
+│   └── meta_mlp_y.pkl
 ├── src/
 │   ├── features/               # 피처 생성 모듈
 │   │   ├── build_feature.py    # Phase 1, 2
 │   │   ├── advanced_features.py # Phase 3
-│   │   └── build_phase6_features.py # Phase 6 ⭐ NEW!
+│   │   └── build_phase6_features.py # Phase 6
 │   └── models/                 # 모델 학습/예측
 │       ├── train_model_v4.py
 │       ├── train_model_lgb_v4.py
 │       ├── train_model_catboost_v4.py
-│       ├── train_all_models_v6.py       # Phase 6 통합 학습 ⭐ NEW!
+│       ├── train_all_models_v6.py
 │       ├── predict_ensemble_v4.py
 │       ├── generate_oof_predictions.py
 │       ├── train_meta_learner.py
+│       ├── train_meta_learner_mlp.py    # Phase 5.1 🆕
 │       ├── predict_stacking.py
-│       └── predict_stacking_v6.py       # Phase 6 예측 ⭐ NEW!
+│       ├── predict_stacking_mlp.py      # Phase 5.1 🆕
+│       └── predict_stacking_v6.py
 ├── reports/
 │   ├── figures/                # 시각화
 │   └── prompts/                # AI 협업 로그
 │       ├── 07_stacking_ensemble.md
-│       └── 08_phase6_error_analysis.md  ⭐ NEW!
+│       ├── 08_phase6_error_analysis.md
+│       └── 09_phase51_mlp_meta_learner.md  # Phase 5.1 🆕
 ├── submissions/                # 제출 파일
 │   ├── submission_stacking_lgb.csv  # Phase 5 (16.5316) 🥇
-│   └── submission_stacking_v6.csv   # Phase 6 (16.5622) ⭐ NEW!
+│   ├── submission_stacking_v6.csv   # Phase 6 (16.5622)
+│   └── submission_stacking_mlp.csv  # Phase 5.1 (16.7311) 🆕
 └── README.md
 ```
 
@@ -70,7 +76,21 @@ kleague-pass-prediction/
 pip install -r requirements.txt
 ```
 
-### Phase 6: 에러 분석 기반 타겟팅 (최신 시도) ⭐
+### Phase 5.1: MLP Meta-Learner (최신 시도) 🆕
+```bash
+# 1. OOF 예측 생성 (Phase 5와 동일)
+python src/models/generate_oof_predictions.py
+
+# 2. MLP Meta-Learner 학습
+python src/models/train_meta_learner_mlp.py
+# 출력: models/meta_mlp_x.pkl, meta_mlp_y.pkl
+
+# 3. MLP Stacking 예측
+python src/models/predict_stacking_mlp.py
+# 출력: submissions/submission_stacking_mlp.csv
+```
+
+### Phase 6: 에러 분석 기반 타겟팅
 ```bash
 # 1. Phase 6 피처 생성
 # build_phase6_features.py가 자동으로 호출됨
@@ -84,7 +104,7 @@ python src/models/predict_stacking_v6.py
 # 출력: submissions/submission_stacking_v6.csv
 ```
 
-### Phase 5: Stacking 앙상블 (최신) ⭐
+### Phase 5: Stacking 앙상블 (최고 기록)
 ```bash
 # 1. OOF 예측 생성 (5-Fold CV)
 python src/models/generate_oof_predictions.py
@@ -99,7 +119,7 @@ python src/models/predict_stacking.py
 # 출력: submissions/submission_stacking_lgb.csv
 ```
 
-### Phase 4: 기본 앙상블 (이전)
+### Phase 4: 기본 앙상블
 ```bash
 # 개별 모델 학습 (Phase 4)
 python src/models/train_model_v4.py          # XGBoost
@@ -123,15 +143,82 @@ python src/models/predict_ensemble_v4.py
 | Phase 3 (Advanced) | 18.85m | 16.98m | -0.2% | 고급 시계열 |
 | Phase 3 + 튜닝 | 18.83m | 16.9724 | -0.2% | 수동 튜닝 |
 | Phase 4 (Domain) | 18.70m | 16.8272 | -0.9% | 도메인 특화 |
-| **Phase 5 (Stacking)** | **12.84m** | **16.5316** | **-1.8%** 🥇 | **Meta-Learning** |
+| **Phase 5 (Stacking)** | **12.84m** | **16.5316** | **-1.8%** 🥇 | **Meta-Learning (LGB)** |
+| Phase 5.1 (MLP) | TBD | 16.7311 | +1.2% ❌ | Neural Network 🆕 |
 | Phase 6 (Error Analysis) | TBD | 16.5622 | +0.2% ⚠️ | 에러 타겟팅 |
 
 **총 개선**: 20.36m → 16.53m (**-18.8%**, 3.83m) 🎉
+
+**Phase 5.1 결과**: 
+- LB 16.7311 (+0.20m vs Phase 5)
+- **MLP Meta-Learner가 예상과 달리 성능 악화**
+- Phase 5 (LightGBM Meta) 최고 기록 유지 확정 ✅
 
 **Phase 6 결과**: 
 - LB 16.5622 (+0.03m vs Phase 5)
 - 에러 분석 기반 피처 추가했으나 성능 미개선
 - Phase 5가 여전히 최고 기록 유지
+
+### Phase 5 vs Phase 5.1: Meta-Learner 비교
+
+#### Meta-Learner 성능 비교
+| Meta-Model | OOF RMSE | LB Score | 개선 | 비고 |
+|------------|----------|----------|------|------|
+| Ridge Regression | 13.19m | - | - | 선형 조합 |
+| **LightGBM** | **12.84m** | **16.5316** 🥇 | baseline | Tree 기반 |
+| **MLP (Neural Net)** | TBD | **16.7311** ❌ | **+0.20m** | 2-layer 비선형 |
+
+**핵심 발견:**
+- ❌ **MLP가 가장 나쁨** (+0.20m, 1.2% 악화)
+- ✅ **LightGBM Meta가 최고** 확정
+- ⚠️ 복잡한 모델 ≠ 더 좋은 성능
+
+#### MLP 실패 원인 분석
+
+**1. 과적합 (Overfitting to OOF)**
+```
+문제: MLP가 Train(OOF) 데이터에 과적합
+증거: OOF 성능 vs LB 성능 차이 증가
+원인: Neural Network의 높은 표현력 + 적은 샘플(15,435개)
+```
+
+**2. 메타 피처의 단순성**
+```
+메타 피처: 6개만 (xgb_x, xgb_y, lgb_x, lgb_y, cat_x, cat_y)
+
+문제: Neural Network는 고차원 피처에 강함
+      6개 저차원에서는 오히려 불리
+      LightGBM/Ridge가 더 적합
+```
+
+**3. Base 모델 예측의 높은 상관관계**
+```
+상관계수: 0.98+ (거의 동일한 예측)
+
+의미: 비선형 조합의 이득 제한적
+      선형 조합(Ridge)이나 Tree(LGB)로 충분
+```
+
+**4. 앙상블 다양성 부족**
+```
+3개 Base 모델: 모두 Gradient Boosting 계열
+결과: 비슷한 예측 패턴
+     비선형 Meta-Learner의 이득 제한
+```
+
+#### MLP 아키텍처
+```python
+Input (6) → Linear(32) → ReLU → Dropout(0.2)
+         → Linear(16) → ReLU → Dropout(0.2)
+         → Linear(1) → Output
+
+설정:
+- Optimizer: Adam (lr=0.001)
+- Loss: MSE
+- Batch Size: 256
+- Early Stopping: patience=20
+- Regularization: Dropout + L2
+```
 
 ### Phase 5: Stacking 앙상블 상세
 
@@ -191,22 +278,30 @@ python src/models/predict_ensemble_v4.py
 **주의**: OOF는 CV 성능이므로 전체 학습보다 낮음 (과적합 없음)
 
 ### 공모전 제출
-- **Public LB (최고)**: 16.5316 RMSE 🥇 **Phase 5 Stacking**
+- **Public LB (최고)**: 16.5316 RMSE 🥇 **Phase 5 Stacking (LightGBM Meta)**
+- **Public LB (Phase 5.1)**: 16.7311 RMSE (Phase 5 대비 +0.20m) ❌
 - **Public LB (Phase 6)**: 16.5622 RMSE (Phase 5 대비 +0.03m)
 - **순위**: 452/816 (상위 약 55%)
 - **일반화 성능**: 베이스라인 대비 약 **-18.8%** 개선 
 - **Phase 4 대비**: -0.30m (-1.8%) 추가 개선 (Phase 5)
 
 ### 앙상블 방식 비교
-| 방식 | Phase 4 | Phase 5 | Phase 6 |
-|------|---------|---------|---------|
-| **가중 평균** | 16.83m | - | - |
-| **Stacking** | - | **16.53m** 🥇 | 16.56m |
+| 방식 | Phase 4 | Phase 5 (LGB Meta) | Phase 5.1 (MLP Meta) | Phase 6 |
+|------|---------|-------------------|---------------------|---------|
+| **가중 평균** | 16.83m | - | - | - |
+| **Stacking** | - | **16.53m** 🥇 | 16.73m ❌ | 16.56m |
 
 **Stacking의 장점**:
 1. 비선형 조합 가능
 2. Base 모델 간 상호작용 학습
 3. 과적합 방지 (OOF 사용)
+
+**Phase 5.1 결과 분석**:
+- MLP Meta-Learner 시도 (2-layer Neural Network)
+- LB 결과: Phase 5보다 0.20m 악화
+- **교훈: 복잡한 모델이 항상 더 좋은 것은 아님**
+- Meta 피처 6개로는 Neural Network가 과함
+- LightGBM/Ridge 같은 단순한 모델이 더 적합
 
 **Phase 6 결과 분석**:
 - 에러 분석 기반 23개 피처 추가
@@ -292,7 +387,7 @@ python src/models/predict_ensemble_v4.py
 - 비선형 조합이 선형보다 우수 (LGB > Ridge)
 - 교차 좌표(x↔y) 정보도 유용
 
-### Phase 6: 에러 분석 기반 타겟팅 피처 (23개) ⭐ NEW!
+### Phase 6: 에러 분석 기반 타겟팅 피처 (23개)
 
 **전략 1: 구역별 특화 (5개)**
 ```python
@@ -395,9 +490,9 @@ python src/models/predict_ensemble_v4.py
 ## 🤖 AI 협업 전략
 
 ### Claude 활용 방법
-1. **피처 아이디어 생성**: 60+ 프롬프트
+1. **피처 아이디어 생성**: 70+ 프롬프트
 2. **코드 리뷰 및 디버깅**: 실시간 오류 수정
-3. **전략 수립**: 앙상블 가중치, 피처 선택, Stacking 설계
+3. **전략 수립**: 앙상블 가중치, 피처 선택, Stacking 설계, Meta-Learner 비교
 4. **문서화**: 체계적 프롬프트 로그
 
 ### 프롬프트 로그 구조
@@ -410,7 +505,8 @@ reports/prompts/
 ├── 05_hyperparameter_tuning.md        # 하이퍼파라미터 & 가중치 최적화
 ├── 06_phase4_domain_features.md       # 도메인 특화 피처
 ├── 07_stacking_ensemble.md            # Stacking 앙상블
-└── 08_phase6_error_analysis.md        # 에러 분석 & 타겟팅 ⭐ NEW!
+├── 08_phase6_error_analysis.md        # 에러 분석 & 타겟팅
+└── 09_phase51_mlp_meta_learner.md     # MLP Meta-Learner 🆕
 ```
 상세: [AI Collaboration Log](reports/prompts/)
 
@@ -488,7 +584,7 @@ reports/prompts/
 5. **교차 좌표 효과**: end_x 예측에 y 정보도 활용
 6. **구조적 개선**: Phase 3-4 피처 실험 +0.18m < Phase 5 Stacking +0.30m
 
-### Day 13 (2026-01-03) ⭐ NEW!
+### Day 13 (2025-12-31 ~ 2026-01-03)
 - ✅ Phase 6 에러 분석 및 타겟팅 피처 설계
 - ✅ 23개 에러 타겟팅 피처 생성
 - ✅ dtype 에러 3번 극복 (category, object → int)
@@ -504,38 +600,76 @@ reports/prompts/
 5. **구조 vs 피처**: Stacking +0.30m > Phase 6 피처 -0.03m
 6. **실패의 가치**: Stacking 우수성 재확인, dtype 전문가 됨
 
+### Day 14 (2026-01-04 ~ 2026-01-06) 🆕
+- ✅ Phase 5.1 MLP Meta-Learner 설계 및 구현
+- ✅ 2-layer Neural Network 학습 (PyTorch)
+- ✅ MLP Stacking 예측 파이프라인 구축
+- ✅ PyTorch 버전 이슈 해결 (verbose 파라미터)
+- ✅ 제출: LB 16.7311 (Phase 5 대비 +0.20m)
+
+**핵심 학습:**
+1. **복잡한 모델 ≠ 더 좋은 성능**: MLP가 가장 나쁨 (+0.20m)
+2. **메타 피처의 단순성**: 6개 피처로는 Neural Network가 과함
+3. **과적합 위험**: 높은 표현력 + 적은 샘플 = 과적합
+4. **Base 모델 상관관계**: 0.98+ → 비선형 조합 이득 제한적
+5. **앙상블 다양성 부족**: 모두 Boosting 계열 → MLP 효과 제한
+6. **문제 복잡도 매칭**: 단순한 문제는 단순한 모델이 최적
+7. **Phase 5 최고 확정**: LightGBM Meta-Learner가 최적 ✅
+
+**기술적 성과:**
+- PyTorch 기반 Meta-Learner 구현
+- StandardScaler + Early Stopping + Dropout 적용
+- 완전 재현 가능한 Neural Network 파이프라인
+
 ## 🎯 다음 단계
 
 ### 현재 상황
-- ✅ Phase 5 Stacking: 16.5316m 🥇 **최고 기록 확정**
-- ⚠️ Phase 6 에러 분석: 16.5622m (효과 없음)
-- 📊 총 13일간 6개 Phase 진행
+- ✅ **Phase 5 Stacking: 16.5316m** 🥇 **최고 기록 확정**
+- ⚠️ Phase 5.1 MLP: 16.7311m (+0.20m 악화)
+- ⚠️ Phase 6 에러 분석: 16.5622m (+0.03m 악화)
+- 📊 총 14일간 6개 Phase + 1개 실험 진행
+
+### 최종 결론
+```
+🏆 Phase 5 (LightGBM Meta-Learner)가 최고!
+
+실험 결과:
+Phase 5 (LGB Meta):   16.5316m ← 최고 ✅
+Phase 5.1 (MLP Meta): 16.7311m (+0.20m)
+Phase 6 (Error):      16.5622m (+0.03m)
+
+교훈:
+- 최적점에서 추가 복잡도는 역효과
+- 문제 복잡도에 맞는 모델 선택 중요
+- 구조적 개선 > 피처/모델 복잡도
+```
 
 ### 고려 중인 방향
 
-#### 옵션 1: 프로젝트 마무리 (추천!)
+#### 옵션 1: 프로젝트 마무리 ⭐ 추천
 ```
 ✅ Phase 5를 최종 제출로 확정
-✅ README 및 문서 정리
+✅ README 및 문서 정리 (진행 중)
+✅ 프롬프트 로그 완성
 ✅ 포트폴리오 작성
 ✅ 다음 프로젝트로 이동
 ```
 
 #### 옵션 2: 추가 실험 (선택)
 ```
-- 2-Level Stacking
-- Neural Network Meta-Model
+- 6-Model Stacking (다양성 증대)
+- Blending (Phase 5 + others)
 - SHAP values 분석
 - 예측 실패 케이스 딥다이브
-- Phase 6 피처 선택 (상위 5개만)
 ```
 
 #### 옵션 3: 다른 접근
 ```
-- Blending (Phase 5 + Phase 6)
-- 앙상블 다양성 증대
+- Pseudo Labeling
+- Adversarial Validation
 - 딥러닝 모델 (LSTM, Transformer)
 ```
+
 ---
 
 ## 🏆 프로젝트 하이라이트
@@ -543,7 +677,7 @@ reports/prompts/
 ### 성과
 ```
 시작: CV 20.36m
-현재: CV 12.84m (Meta-Learner), LB 16.5316 🥇
+최고: CV 12.84m (Meta-Learner), LB 16.5316 🥇
 
 총 개선: -18.8% (3.83m)
 핵심 기법: 시계열 + 도메인 특화 + Stacking 앙상블
@@ -552,65 +686,102 @@ reports/prompts/
 ### 주요 성과
 - ✅ 체계적 피처 엔지니어링 (6 phases, 71개 피처)
 - ✅ **Stacking 앙상블** (OOF + Meta-Learning)
+- ✅ **Meta-Learner 3종 비교** (Ridge, LightGBM, MLP) 🆕
 - ✅ 3-model 앙상블 최적화
 - ✅ AI 기반 개발 프로세스 구축
 - ✅ 완전 재현 가능한 파이프라인
 - ✅ **dtype 전문가 됨** (3번의 에러 극복)
+- ✅ **PyTorch 기반 Meta-Learning 구현** 🆕
 
 ### 최종 스코어보드
 | 항목 | 수치 | 비고 |
 |------|------|------|
-| Public LB (최고) | 16.5316 | Phase 5 Stacking 🥇 |
-| Public LB (Phase 6) | 16.5622 | 에러 분석 시도 |
+| Public LB (최고) | **16.5316** | Phase 5 Stacking (LGB Meta) 🥇 |
+| Public LB (Phase 5.1) | 16.7311 | MLP Meta-Learner 🆕 |
+| Public LB (Phase 6) | 16.5622 | 에러 분석 |
 | 순위 | 452/816 | 상위 55% |
 | 총 개선 | -18.8% | 베이스라인 대비 |
 | Phase 5 개선 | -1.8% | Phase 4 대비 |
-| 총 개발 기간 | 13일 | 6 phases |
+| 총 개발 기간 | 14일 | 6 phases + 1 실험 |
 
 ---
 
 ## 📚 핵심 교훈
 
-### 1. 구조적 개선 > 피처 개선
+### 1. 구조적 개선 > 피처/모델 복잡도
 ```
 Phase 3-4: 수많은 피처 실험 → +0.18m
 Phase 5: Stacking (구조 변경) → +0.30m
+Phase 5.1: MLP (복잡도 증가) → -0.20m (악화) 🆕
 Phase 6: +23개 피처 → -0.03m (악화)
 
-→ 구조적 개선이 더 효과적!
+→ 구조적 개선이 가장 효과적!
+→ 과도한 복잡도는 역효과!
 ```
 
-### 2. 최적점의 인식
+### 2. 문제 복잡도에 맞는 모델 선택 🆕
+```
+Meta-Features: 6개만 (단순)
+
+Ridge (선형):     적절 ✅
+LightGBM (비선형): 최적 ✅✅
+MLP (Deep 비선형): 과함 ❌
+
+교훈:
+"망치로 못 박기" ✅
+"망치로 나사 조이기" ❌
+→ 문제에 맞는 도구 선택이 핵심
+```
+
+### 3. 최적점의 인식
 ```
 Phase 5 Stacking: 이미 최적
-Phase 6 추가 시도: 노이즈
+Phase 5.1 MLP: 과도한 복잡도
+Phase 6 피처: 추가 노이즈
 
 → "멈출 때를 아는 것"도 능력
+→ 최적점에서 추가 시도는 리스크
 ```
 
-### 3. 실패도 학습
+### 4. 실패도 학습
 ```
-Phase 6 실패를 통해:
-✅ Stacking 우수성 재확인
-✅ 피처의 한계 이해
-✅ dtype 전문가 됨
-✅ 실험 설계 능력 향상
+Phase 5.1 MLP 실패를 통해:
+✅ Phase 5 최고 확정
+✅ 메타 피처 단순성 이해
+✅ 과적합 위험 인식
+✅ PyTorch 구현 능력 습득
+✅ 문제-모델 매칭 중요성 학습
 ```
 
-### 4. 모델 다양성 > 개별 우수성
+### 5. 모델 다양성 > 개별 우수성
 ```
 상관계수 0.98+ (거의 동일)
 But Stacking: +0.30m 개선
 
 → 미묘한 차이가 중요!
+→ 다양성이 앙상블의 핵심
 ```
 
-### 5. OOF의 중요성
+### 6. OOF의 중요성
 ```
 OOF: 13.35m (과적합 없음)
 Train: 18.70m (과적합 포함)
 
 → OOF가 진짜 일반화 성능
+→ Meta-Learner 학습의 핵심
+```
+
+### 7. 점진적 개선의 가치
+```
+작은 개선들의 누적:
+Phase 1→2: -7.3%
+Phase 2→3: -0.2%
+Phase 3→4: -0.9%
+Phase 4→5: -1.8%
+
+총 누적: -18.8% ✨
+
+→ 포기하지 않는 것이 중요
 ```
 
 ---
@@ -618,13 +789,21 @@ Train: 18.70m (과적합 포함)
 ## 📖 참고 자료
 
 ### 문서
-- [AI Collaboration Log](reports/prompts/): 8개 프롬프트 로그
+- [AI Collaboration Log](reports/prompts/): 9개 프롬프트 로그
+- [Phase 5.1 MLP Meta-Learner](reports/prompts/09_phase51_mlp_meta_learner.md): MLP 실험 전체 과정 🆕
 - [Phase 6 Error Analysis](reports/prompts/08_phase6_error_analysis.md): 에러 분석 전체 과정
 
 ### 코드
 - [피처 생성](src/features/): Phase 1-6 피처 모듈
 - [모델 학습](src/models/): 학습 및 예측 스크립트
+- [Meta-Learner](src/models/): Ridge, LightGBM, MLP 3종 🆕
 - [제출 파일](submissions/): 전체 제출 이력
+
+### 주요 알고리즘
+- **Stacking 앙상블**: OOF 기반 Meta-Learning
+- **5-Fold CV**: Data Leakage 방지
+- **Meta-Learning**: Ridge, LightGBM, Neural Network
+- **PyTorch**: 딥러닝 Meta-Learner 구현 🆕
 
 ---
 
