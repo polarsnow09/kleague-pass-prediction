@@ -3,7 +3,7 @@
 > K리그 경기 내 최종 패스 좌표 예측 AI 모델 개발
 
 [![Public LB](https://img.shields.io/badge/Public%20LB-16.4981-blue)](https://github.com/polarsnow09/kleague-pass-prediction)
-[![Rank](https://img.shields.io/badge/Rank-459%2F872%20(53%25)-green)](https://github.com/polarsnow09/kleague-pass-prediction)
+[![Rank](https://img.shields.io/badge/Rank-552%2F937%20(59%25)-green)](https://github.com/polarsnow09/kleague-pass-prediction)
 [![Python](https://img.shields.io/badge/Python-3.10-blue)](https://www.python.org/)
 
 ## 🏆 주요 성과
